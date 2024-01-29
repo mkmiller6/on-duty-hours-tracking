@@ -5,7 +5,9 @@ Generate decrypted credentials from AWS KMS.
 
 from base64 import b64decode
 import os
+import json
 import boto3
+from botocore.exceptions import ClientError
 
 
 ENCRYPTED_OP_APIKEY = os.environ['O_APIkey']
@@ -16,7 +18,31 @@ ENCRYPTED_TEMPLATE_SHEET_ID = os.environ['TEMPLATE_SHEET_ID']
 ENCRYPTED_PARENT_FOLDER_ID = os.environ['PARENT_FOLDER_ID']
 
 ENCRYPTED_PRIV_SA = os.environ['PRIV_SA']
-ENCRYPTED_KEY_FILE = os.environ['KEY_FILE']
+
+def get_secret():
+
+    secret_name = "google-timesheet-bot-private-key"
+    region_name = "us-east-2"
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        # For a list of exceptions thrown, see
+        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+        raise e
+
+    secret = get_secret_value_response['SecretString']
+
+    return json.loads(secret)
 
 # Decrypt code should run once and variables stored outside of the function
 # handler so that these are decrypted once per container
@@ -51,7 +77,4 @@ priv_sa = boto3.client('kms').decrypt(
     EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
 )['Plaintext'].decode('utf-8')
 
-key_file = boto3.client('kms').decrypt(
-    CiphertextBlob=b64decode(ENCRYPTED_KEY_FILE),
-    EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
-)['Plaintext'].decode('utf-8')
+key_file = get_secret()

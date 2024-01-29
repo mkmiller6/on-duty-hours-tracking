@@ -179,7 +179,7 @@ def get_access_token(impersonated_account: str, scopes: list[str]):
     Get access token for impersonated service account.
     """
     if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-        credentials = Credentials.from_service_account_info(json.loads(key_file))
+        credentials = Credentials.from_service_account_info(key_file)
     else:
         credentials = Credentials.from_service_account_file(key_file)
 
