@@ -22,10 +22,10 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.aws_account_id }}:role/github-actions-rmodi
-          aws-region: ${{ secrets.aws_region }}
-          aws-access-key-id: ${{ secrets.aws_access_key_id }}
-          aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACOUNT_ID }}:role/github-actions-rmodi
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       
       - name: prepare ECR repo name based on the Github repository
         shell: bash
@@ -41,7 +41,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
         with:
-          registries: ${{ secrets.aws_account_id }}
+          registries: ${{ secrets.AWS_ACOUNT_ID }}
           mask-password: "true"
         
       - name: Build, tag, and push image to Amazon ECR
