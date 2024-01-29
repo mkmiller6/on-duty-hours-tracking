@@ -7,9 +7,9 @@ COPY requirements.txt ${LAMBDA_TASK_ROOT}
 RUN pip install -r requirements.txt
 
 # Copy function code
-COPY lamda_function.py ${LAMBDA_TASK_ROOT}
+COPY lambda_function.py ${LAMBDA_TASK_ROOT}
 COPY ./helpers ${LAMBDA_TASK_ROOT}/helpers
 COPY credentials.py ${LAMBDA_TASK_ROOT}
 
 # Set the CMD to the handler
-CMD [ "lamda_function.handler" ]
+CMD [ "lambda_function.handler" ]
