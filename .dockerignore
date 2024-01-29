@@ -2,3 +2,4 @@
 .github
 tests
 get_folder.py
+config.py
