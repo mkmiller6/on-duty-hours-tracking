@@ -2,13 +2,12 @@
 Helper functions for interacting with Google Discovery APIs.
 """
 import os
-import json
 
 from google.auth import impersonated_credentials
 from google.oauth2.service_account import Credentials
 import google.auth.transport.requests
 
-if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import key_file, priv_sa
 else:
     from config import key_file, priv_sa

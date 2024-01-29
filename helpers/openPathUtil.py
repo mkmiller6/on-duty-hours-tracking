@@ -1,14 +1,17 @@
 ########### ATXHS NeonCRM & Discourse API Integrations ############
 #      Neon API docs - https://developer.neoncrm.com/api-v2/     #
 #################################################################
+import os
 
 from pprint import pformat
 from base64 import b64encode
 import requests
 import logging
 
-from config import O_APIkey, O_APIuser
-
+if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
+    from credentials import O_APIkey, O_APIuser
+else:
+    from config import O_APIkey, O_APIuser
 
 ### OpenPath Account Info
 O_auth      = f'{O_APIuser}:{O_APIkey}'
