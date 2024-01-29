@@ -1,0 +1,4 @@
+boto3
+smtplib
+ssl
+google-api-python-client

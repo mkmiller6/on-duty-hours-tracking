@@ -1,0 +1,7 @@
+.env
+config.py
+onDutyHoursTrackingServiceAccountKey.json
+.DS_Store
+__pycache__
+*.pyc
+
