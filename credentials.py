@@ -16,7 +16,7 @@ ENCRYPTED_TEMPLATE_SHEET_ID = os.environ['TEMPLATE_SHEET_ID']
 ENCRYPTED_PARENT_FOLDER_ID = os.environ['PARENT_FOLDER_ID']
 
 ENCRYPTED_PRIV_SA = os.environ['PRIV_SA']
-ENCRYPTED_KEY_FILE = os.environ['KEY_FILE_PATH']
+ENCRYPTED_KEY_FILE = os.environ['KEY_FILE']
 
 # Decrypt code should run once and variables stored outside of the function
 # handler so that these are decrypted once per container
