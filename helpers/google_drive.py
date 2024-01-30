@@ -12,6 +12,72 @@ if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
 else:
     from config import key_file, priv_sa
 
+def batch_update_copied_spreadsheet(
+    sheet, file_id, copied_sheet_id, protected_range_id
+):
+    """
+    Batch update the copied spreadsheet. Updates protected range to allow Asmbly groups
+    to edit, and formats the Hours column to Duration.
+    """
+    sheet.batchUpdate(
+        spreadsheetId=file_id,
+        body={
+            "requests": [
+                {
+                    "updateProtectedRange": {
+                        "protectedRange": {
+                            "protectedRangeId": protected_range_id,
+                            "range": {
+                                "sheetId": copied_sheet_id,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 4,
+                            },
+                            "description": "On-Duty Hours",
+                            "warningOnly": False,
+                            "editors": {
+                                "users": [
+                                    "admin@asmbly.org",
+                                    priv_sa
+                                ],
+                                "groups": [
+                                    "membership@asmbly.org",
+                                    "leadership@asmbly.org",
+                                    "classes@asmbly.org",
+                                ],
+                            },
+                        },
+                        "fields": "*",
+                    }
+                },
+                {
+                    "updateCells": {
+                        "rows": [
+                            {
+                                "values": [
+                                    {
+                                        "userEnteredFormat": {
+                                            "numberFormat": {
+                                                "type": "DATE_TIME",
+                                                "pattern": "[h]:mm:ss",
+                                            }
+                                        },
+                                    },
+                                ]
+                            }
+                        ],
+                        "fields": "userEnteredFormat.numberFormat",
+                        "range": {
+                            "sheetId": copied_sheet_id,
+                            "startRowIndex": 2,
+                            "startColumnIndex": 3,
+                            "endColumnIndex": 4,
+                        },
+                    },
+                }
+            ]
+        }
+    ).execute()
+
 
 def batch_update_new_sheet(sheet, file_id, new_sheet_id, user_full_name):
     """
@@ -166,7 +232,31 @@ def batch_update_new_sheet(sheet, file_id, new_sheet_id, user_full_name):
                         "fields": "gridProperties.frozenRowCount",
                     }
                 },
-                #TODO: Format Column D to Duration
+                {
+                    "updateCells": {
+                        "rows": [
+                            {
+                                "values": [
+                                    {
+                                        "userEnteredFormat": {
+                                            "numberFormat": {
+                                                "type": "DATE_TIME",
+                                                "pattern": "[h]:mm:ss",
+                                            }
+                                        },
+                                    },
+                                ]
+                            }
+                        ],
+                        "fields": "userEnteredFormat.numberFormat",
+                        "range": {
+                            "sheetId": new_sheet_id,
+                            "startRowIndex": 2,
+                            "startColumnIndex": 3,
+                            "endColumnIndex": 4,
+                        },
+                    },
+                }
             ]
         },
     ).execute()

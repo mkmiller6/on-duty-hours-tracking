@@ -3,7 +3,6 @@ Lambda function that is triggered by Openpath events on the clock-in and clock-o
 attached to the Openpath cabinet at Asmbly.
 """
 
-import json
 import logging
 import os
 from datetime import datetime
@@ -13,7 +12,11 @@ from dataclasses import dataclass
 from googleapiclient.discovery import build
 
 from helpers.openPathUtil import getUser
-from helpers.google_drive import batch_update_new_sheet, get_access_token
+from helpers.google_drive import (
+    batch_update_new_sheet,
+    get_access_token,
+    batch_update_copied_spreadsheet,
+)
 
 if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
     from credentials import (
@@ -31,6 +34,8 @@ else:
         PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
     )
+
+logging.getLogger().setLevel(logging.INFO)
 
 
 # Define Google OAuth2 scopes needed.
@@ -146,9 +151,15 @@ def handler(event, _):
                 },
                 supportsAllDrives=True,
             )
-            .execute()
-            .get("id")
+            .execute().get("id")
         )
+
+        ind_sheet = sheet.get(
+            spreadsheetId=sheet_id,
+        ).execute().get("sheets")[0]
+
+        ind_sheet_id = ind_sheet.get("properties").get("sheetId")
+        protected_range_id = ind_sheet.get("protectedRanges")[0].get("protectedRangeId")
 
         sheet.values().append(
             spreadsheetId=sheet_id,
@@ -157,8 +168,8 @@ def handler(event, _):
             valueInputOption="USER_ENTERED",
         ).execute()
 
-        # TODO: Update protected range on new file to allow groups/users other than bot to edit
-        # and format column D to Duration
+        batch_update_copied_spreadsheet(sheet, sheet_id, ind_sheet_id, protected_range_id)
+
 
     # TODO: Change this entry name to Clock-in entry name when ready to deploy
     if op_event.entry == "Instructors Locker":
