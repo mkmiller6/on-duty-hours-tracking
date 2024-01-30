@@ -9,11 +9,12 @@ from google.oauth2.service_account import Credentials
 import google.auth.transport.requests
 from googleapiclient.discovery import build
 
-
 if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import key_file, priv_sa, DRIVE_ID
 else:
     from config import key_file, priv_sa, DRIVE_ID
+
+logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 
 def batch_update_copied_spreadsheet(
     sheet, file_id, copied_sheet_id, protected_range_id

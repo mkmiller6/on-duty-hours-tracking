@@ -39,6 +39,7 @@ else:
         DRIVE_ID
     )
 
+logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
 logging.getLogger().setLevel(logging.INFO)
 
 
