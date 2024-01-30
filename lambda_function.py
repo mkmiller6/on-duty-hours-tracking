@@ -5,6 +5,7 @@ attached to the Openpath cabinet at Asmbly.
 
 import logging
 import os
+import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dataclasses import dataclass
@@ -16,6 +17,7 @@ from helpers.google_drive import (
     batch_update_new_sheet,
     get_access_token,
     batch_update_copied_spreadsheet,
+    SlideshowOperations
 )
 
 if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
@@ -95,7 +97,7 @@ def handler(event, _):
     logging.info("Received OP event: %s", event)
 
     try:
-        op_event = event.get("body")
+        op_event = json.loads(event.get("body"))
     except Exception as e:
         logging.error("Error parsing event: %s", e)
         raise
@@ -112,10 +114,14 @@ def handler(event, _):
 
 
     op_event = OpenpathEvent(
-        op_event.get("entry"), int(op_event.get("userId")), int(op_event.get("timestamp"))
+        op_event.get("entryId"), int(op_event.get("userId")), int(op_event.get("timestamp"))
     )
 
     op_user = OpenpathUser(op_event.user_id)
+
+    slideshows_ops = SlideshowOperations(
+        drive_service, op_user.full_name
+    )
 
     # Check if On-Duty hours Google Sheet already exsists for this user.
     # If not, copy the template sheet.
@@ -223,7 +229,7 @@ def handler(event, _):
             valueInputOption="USER_ENTERED",
         ).execute()
 
-        # TODO: Add active On-Duty slide for this volunteer to the TV slideshow Drive folder
+        slideshows_ops.add_volunteer_to_slideshow()
 
     elif op_event.entry == "Clock Out":
         # Update the user's log sheet with the clock-out time
@@ -274,4 +280,4 @@ def handler(event, _):
             valueInputOption="USER_ENTERED",
         ).execute()
 
-        # TODO: Remove active On-Duty slide for this volunteer from the TV slideshow Drive folder
+        slideshows_ops.remove_volunteer_from_slideshow()

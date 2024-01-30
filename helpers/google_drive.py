@@ -2,10 +2,13 @@
 Helper functions for interacting with Google Discovery APIs.
 """
 import os
+import logging
 
 from google.auth import impersonated_credentials
 from google.oauth2.service_account import Credentials
 import google.auth.transport.requests
+from googleapiclient.discovery import build
+
 
 if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import key_file, priv_sa
@@ -287,7 +290,6 @@ def get_folder_id(folder_name):
     """
     Get folder ID from folder name.
     """
-    from googleapiclient.discovery import build
 
     creds = get_access_token(priv_sa, ["https://www.googleapis.com/auth/drive.readonly"])
 
@@ -298,9 +300,83 @@ def get_folder_id(folder_name):
     results = drive_service.files().list( # pylint: disable=maybe-no-member
             q=search,
             fields=fields,
-            supportsAllDrives=True).execute()
+            supportsAllDrives=True,
+            driveId="0ADuGDgrEXJMJUk9PVA",
+            corpora="drive",
+            includeItemsFromAllDrives=True).execute()
 
     items = results.get('files', [])
-    for item in items:
-        print(u'{0} ({1})- {2}'.format(item['name'], item['id'],
-        item['mimeType']))
+
+    if not items:
+        return []
+
+    return items[0]
+    #for item in items:
+    #    print(u'{0} ({1})- {2}'.format(item['name'], item['id'],
+    #    item['mimeType']))
+
+
+class SlideshowOperations:
+    """
+    Class for Asmbly TV slideshow operations. Methods for adding and removing volunteers
+    to the slideshow when they are actively on duty.
+    """
+    def __init__(self, drive_service, volunteer_name):
+        self.drive_service = drive_service
+        self.volunteer_name = volunteer_name
+        self.slideshow_folder_id = get_folder_id("____LobbyTV").get("id")
+        self.volunteer_slides_folder_id = get_folder_id("On Duty Volunteer Slides").get("id")
+
+    def add_volunteer_to_slideshow(self):
+        """
+        Add volunteer to slideshow.
+        """
+        volunteer_slide = (
+            self.drive_service.files()
+            .list(
+                q=f"""
+                trashed=false and name="{self.volunteer_name}"
+                and "{self.volunteer_slides_folder_id}" in parents
+            """,
+            includeItemsFromAllDrives=True,
+            supportsAllDrives=True,
+            corpora="drive",
+            driveId="0ADuGDgrEXJMJUk9PVA",
+            )
+            .execute()
+        )
+
+        if len(volunteer_slide.get("files")) > 0:
+            self.drive_service.files().copy(
+                fileId=volunteer_slide.get("files")[0].get("id"),
+                body={
+                    "name": self.volunteer_name,
+                    "parents": [self.slideshow_folder_id],
+                },
+                supportsAllDrives=True,
+            ).execute()
+        else:
+            logging.info("No slide for %s, consider adding them", self.volunteer_name)
+
+    def remove_volunteer_from_slideshow(self):
+        """
+        Remove volunteer from slideshow.
+        """
+
+        volunteer_slide = self.drive_service.files().list(
+            q=f"""
+                trashed=false and name="{self.volunteer_name}"
+                and "{self.slideshow_folder_id}" in parents
+            """,
+            includeItemsFromAllDrives=True,
+            supportsAllDrives=True,
+            corpora="drive",
+            driveId="0ADuGDgrEXJMJUk9PVA",
+        ).execute()
+
+        if len(volunteer_slide.get("files")) > 0:
+            slide_file_id = volunteer_slide.get("files")[0].get("id")
+
+            self.drive_service.files().delete(
+                fileId=slide_file_id
+            ).execute()
