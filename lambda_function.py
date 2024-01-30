@@ -9,6 +9,7 @@ import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dataclasses import dataclass
+import requests
 
 from googleapiclient.discovery import build
 
@@ -27,7 +28,8 @@ if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
-        DRIVE_ID
+        DRIVE_ID,
+        SLACK_WEBHOOK_URL
     )
 else:
     from config import (
@@ -36,7 +38,8 @@ else:
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
-        DRIVE_ID
+        DRIVE_ID,
+        SLACK_WEBHOOK_URL
     )
 
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
@@ -237,6 +240,20 @@ def handler(event, _):
 
         slideshows_ops.add_volunteer_to_slideshow()
 
+        slack_event_payload = {
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"*{op_user.full_name}* is now on duty.",
+                    },
+                },
+            ]
+        }
+
+        requests.post(SLACK_WEBHOOK_URL, json=slack_event_payload, timeout=10)
+
     elif op_event.entry == "Clock Out":
         # Update the user's log sheet with the clock-out time
         rows = sheet.values().get(
@@ -287,5 +304,19 @@ def handler(event, _):
         ).execute()
 
         slideshows_ops.remove_volunteer_from_slideshow()
+
+        slack_event_payload = {
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"*{op_user.full_name}* has ended their shift.",
+                    },
+                },
+            ]
+        }
+
+        requests.post(SLACK_WEBHOOK_URL, json=slack_event_payload, timeout=10)
 
     return {"statusCode": 200}
