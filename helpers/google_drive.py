@@ -11,9 +11,9 @@ from googleapiclient.discovery import build
 
 
 if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
-    from credentials import key_file, priv_sa
+    from credentials import key_file, priv_sa, DRIVE_ID
 else:
-    from config import key_file, priv_sa
+    from config import key_file, priv_sa, DRIVE_ID
 
 def batch_update_copied_spreadsheet(
     sheet, file_id, copied_sheet_id, protected_range_id
@@ -301,14 +301,14 @@ def get_folder_id(folder_name):
             q=search,
             fields=fields,
             supportsAllDrives=True,
-            driveId="0ADuGDgrEXJMJUk9PVA",
+            driveId=DRIVE_ID,
             corpora="drive",
             includeItemsFromAllDrives=True).execute()
 
     items = results.get('files', [])
 
     if not items:
-        return []
+        return {}
 
     return items[0]
     #for item in items:
@@ -325,7 +325,7 @@ class SlideshowOperations:
         self.drive_service = drive_service
         self.volunteer_name = volunteer_name
         self.slideshow_folder_id = get_folder_id("____LobbyTV").get("id")
-        self.volunteer_slides_folder_id = get_folder_id("On Duty Volunteer Slides").get("id")
+        self.volunteer_slides_folder_id = get_folder_id("Volunteer Slides").get("id")
 
     def add_volunteer_to_slideshow(self):
         """
@@ -341,7 +341,7 @@ class SlideshowOperations:
             includeItemsFromAllDrives=True,
             supportsAllDrives=True,
             corpora="drive",
-            driveId="0ADuGDgrEXJMJUk9PVA",
+            driveId=DRIVE_ID,
             )
             .execute()
         )
@@ -371,7 +371,7 @@ class SlideshowOperations:
             includeItemsFromAllDrives=True,
             supportsAllDrives=True,
             corpora="drive",
-            driveId="0ADuGDgrEXJMJUk9PVA",
+            driveId=DRIVE_ID,
         ).execute()
 
         if len(volunteer_slide.get("files")) > 0:

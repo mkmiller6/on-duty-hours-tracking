@@ -27,6 +27,7 @@ if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
+        DRIVE_ID
     )
 else:
     from config import (
@@ -35,6 +36,7 @@ else:
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
+        DRIVE_ID
     )
 
 logging.getLogger().setLevel(logging.INFO)
@@ -98,6 +100,7 @@ def handler(event, _):
 
     try:
         op_event = json.loads(event.get("body"))
+        logging.info("Parsed event: %s", op_event)
     except Exception as e:
         logging.error("Error parsing event: %s", e)
         raise
@@ -136,7 +139,7 @@ def handler(event, _):
             includeItemsFromAllDrives=True,
             supportsAllDrives=True,
             corpora="drive",
-            driveId="0ADuGDgrEXJMJUk9PVA",
+            driveId=DRIVE_ID,
         )
         .execute()
     )

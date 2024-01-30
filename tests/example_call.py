@@ -6,11 +6,10 @@ example_call = {
     "rawPath": "/",
     "rawQueryString": "",
     "headers": {
-        "content-length": "174",
         "content-type": "application/json",
         "accept-encoding": "gzip, deflate",
         "accept": "*/*",
-        "user-agent": "Openpath/Rules Engine"
+        "user-agent": "Openpath/Rules Engine",
     },
     "requestContext": {
         "accountId": "anonymous",
@@ -18,19 +17,13 @@ example_call = {
             "method": "POST",
             "path": "/",
             "protocol": "HTTP/1.1",
-            "userAgent": "Openpath/Rules Engine"
+            "userAgent": "Openpath/Rules Engine",
         },
-        "requestId": "41397b3c-6126-42fd-8de3-b3386a010c4d",
         "routeKey": "$default",
         "stage": "$default",
-        "time": "30/Jan/2024:05:13:48 +0000",
-        "timeEpoch": 1706591628865
+        "time": "30/Jan/2024:15:54:52 +0000",
+        "timeEpoch": 1706630092598,
     },
-    "body": f'''{{
-        "userId": "3562272",
-        "timestamp": "1706596070",
-        "entryId": "Instructors Locker",
-        "apiKey": "{INTERNAL_API_KEY}"
-    }}''',
-    "isBase64Encoded": False
+    "body": f'{{"userId":"7385407","timestamp":"1706630094","entryId":"Instructors Locker","apiKey":"{INTERNAL_API_KEY}"}}',
+    "isBase64Encoded": False,
 }

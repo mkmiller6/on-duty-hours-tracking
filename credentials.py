@@ -16,6 +16,7 @@ ENCRYPTED_OP_APIUSER = os.environ['O_APIuser']
 ENCRYPTED_MASTER_LOG_SPREADSHEET_ID = os.environ['MASTER_LOG_SPREADSHEET_ID']
 ENCRYPTED_TEMPLATE_SHEET_ID = os.environ['TEMPLATE_SHEET_ID']
 ENCRYPTED_PARENT_FOLDER_ID = os.environ['PARENT_FOLDER_ID']
+ENCRYPTED_DRIVE_ID = os.environ['DRIVE_ID']
 
 ENCRYPTED_PRIV_SA = os.environ['PRIV_SA']
 ENCRYPTED_INTERNAL_API_KEY = os.environ['INTERNAL_API_KEY']
@@ -70,6 +71,11 @@ TEMPLATE_SHEET_ID = boto3.client('kms').decrypt(
 
 PARENT_FOLDER_ID = boto3.client('kms').decrypt(
     CiphertextBlob=b64decode(ENCRYPTED_PARENT_FOLDER_ID),
+    EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
+)['Plaintext'].decode('utf-8')
+
+DRIVE_ID = boto3.client('kms').decrypt(
+    CiphertextBlob=b64decode(ENCRYPTED_DRIVE_ID),
     EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
 )['Plaintext'].decode('utf-8')
 

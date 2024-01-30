@@ -6,12 +6,7 @@ from config import INTERNAL_API_KEY
 from tests.example_call import example_call
 
 
-expected = {
-        "userId": "3562272",
-        "timestamp": "1706596070",
-        "entryId": "Instructors Locker",
-        "apiKey": f"{INTERNAL_API_KEY}"
-    }
+expected = {"userId":"7385407","timestamp":"1706630094","entryId":"Instructors Locker","apiKey":f"{INTERNAL_API_KEY}"}
 
 @pytest.mark.parametrize("event_input, expected_output", [(example_call, expected)])
 def test_handler(event_input, expected_output):
