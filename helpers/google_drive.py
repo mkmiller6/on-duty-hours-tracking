@@ -41,9 +41,7 @@ def batch_update_new_sheet(sheet, file_id, new_sheet_id, user_full_name):
                                 "values": [
                                     {
                                         "userEnteredValue": {
-                                            "stringValue": f"""On-Duty Volunteer Timesheet
-                                                            - {user_full_name}
-                                                            """
+                                            "stringValue": f"On-Duty Volunteer Timesheet - {user_full_name}"
                                         },
                                         "userEnteredFormat": {
                                             "textFormat": {"bold": True},
@@ -103,7 +101,7 @@ def batch_update_new_sheet(sheet, file_id, new_sheet_id, user_full_name):
                                 ]
                             },
                         ],
-                        "fields": ["userEnteredValue", "userEnteredFormat"],
+                        "fields": "*",
                         "start": {
                             "sheetId": new_sheet_id,
                             "rowIndex": 0,
@@ -168,6 +166,7 @@ def batch_update_new_sheet(sheet, file_id, new_sheet_id, user_full_name):
                         "fields": "gridProperties.frozenRowCount",
                     }
                 },
+                #TODO: Format Column D to Duration
             ]
         },
     ).execute()

@@ -76,8 +76,8 @@ class OpenpathUser:
 
     def __post_init__(self):
         self.user_data = getUser(self.user_id)
-        self.first_name = self.user_data.get("data").get("identity").get("firstName")
-        self.last_name = self.user_data.get("data").get("identity").get("lastName")
+        self.first_name = self.user_data.get("identity").get("firstName")
+        self.last_name = self.user_data.get("identity").get("lastName")
         self.full_name = f"{self.first_name} {self.last_name}"
 
 
@@ -157,6 +157,9 @@ def handler(event, _):
             valueInputOption="USER_ENTERED",
         ).execute()
 
+        # TODO: Update protected range on new file to allow groups/users other than bot to edit
+        # and format column D to Duration
+
     # TODO: Change this entry name to Clock-in entry name when ready to deploy
     if op_event.entry == "Instructors Locker":
         # Append to user's log sheet
@@ -173,8 +176,8 @@ def handler(event, _):
             sheet.get(spreadsheetId=MASTER_LOG_SPREADSHEET_ID).execute().get("sheets")
         )
         exists = False
-        for sheet in odv_sheets:
-            if sheet.get("properties").get("title") == f"{op_user.full_name}":
+        for odv_sheet in odv_sheets:
+            if odv_sheet.get("properties").get("title") == f"{op_user.full_name}":
                 exists = True
                 break
 
@@ -213,7 +216,11 @@ def handler(event, _):
 
     elif op_event.entry == "Clock Out":
         # Update the user's log sheet with the clock-out time
-        rows = sheet.values().get(spreadsheetId=sheet_id, range="Sheet1!A1:B").execute()
+        rows = sheet.values().get(
+            spreadsheetId=sheet_id,
+            range="Sheet1!A1:B",
+            majorDimension="ROWS",
+            ).execute().get("values")
         last_row = len(rows)
 
         sheet.values().update(
@@ -236,17 +243,15 @@ def handler(event, _):
             .get(
                 spreadsheetId=MASTER_LOG_SPREADSHEET_ID,
                 range=f"'{op_user.full_name}'!A1:B",
+                majorDimension="ROWS",
             )
-            .execute()
+            .execute().get("values")
         )
         last_row = len(rows)
 
         sheet.values().update(
             spreadsheetId=MASTER_LOG_SPREADSHEET_ID,
-            range=f"""
-                "{op_user.full_name}"!C{last_row if last_row > 2 else 3}:
-                D{last_row if last_row > 2 else 3}
-            """,
+            range=f"'{op_user.full_name}'!C{last_row if last_row > 2 else 3}:D{last_row if last_row > 2 else 3}",
             body={
                 "values": [
                     [
