@@ -378,6 +378,8 @@ class SlideshowOperations:
         if len(volunteer_slide.get("files")) > 0:
             slide_file_id = volunteer_slide.get("files")[0].get("id")
 
-            self.drive_service.files().delete(
-                fileId=slide_file_id
+            self.drive_service.files().update(
+                fileId=slide_file_id,
+                body={"trashed": True},
+                supportsAllDrives=True,
             ).execute()

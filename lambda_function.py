@@ -127,6 +127,8 @@ def handler(event, _):
         drive_service, op_user.full_name
     )
 
+    logging.info("Volunteer: %s", op_user.full_name)
+
     # Check if On-Duty hours Google Sheet already exsists for this user.
     # If not, copy the template sheet.
     existing_sheet_check = (
