@@ -287,3 +287,5 @@ def handler(event, _):
         ).execute()
 
         slideshows_ops.remove_volunteer_from_slideshow()
+
+    return {"statusCode": 200}
