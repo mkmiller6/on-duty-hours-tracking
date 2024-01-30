@@ -90,7 +90,7 @@ def handler(event, _):
     logging.info("Received OP event: %s", event)
 
     try:
-        op_event = json.loads(event).get("body")
+        op_event = event.get("body")
     except Exception as e:
         logging.error("Error parsing event: %s", e)
         raise
