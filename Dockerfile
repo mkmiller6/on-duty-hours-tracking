@@ -1,10 +1,10 @@
-FROM public.ecr.aws/lambda/python:3.12
+FROM public.ecr.aws/lambda/python:3.12-arm64
 
 # Copy requirements.txt file
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
 
 # Install requirements
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy function code
 COPY lambda_function.py ${LAMBDA_TASK_ROOT}
