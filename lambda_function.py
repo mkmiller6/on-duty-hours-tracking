@@ -21,6 +21,7 @@ if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
         MASTER_LOG_SPREADSHEET_ID,
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
+        INTERNAL_API_KEY,
     )
 else:
     from config import (
@@ -28,6 +29,7 @@ else:
         MASTER_LOG_SPREADSHEET_ID,
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
+        INTERNAL_API_KEY,
     )
 
 
@@ -87,16 +89,25 @@ def handler(event, _):
 
     logging.info("Received OP event: %s", event)
 
+    try:
+        op_event = json.loads(event).get("body")
+    except Exception as e:
+        logging.error("Error parsing event: %s", e)
+        raise
+
+    if op_event.get("apiKey") != INTERNAL_API_KEY:
+        logging.error("Invalid API key")
+        return
+
     creds = get_access_token(priv_sa, SCOPES)
 
     # Create the API services using built credential tokens
     drive_service = build("drive", "v3", credentials=creds)
     sheets_service = build("sheets", "v4", credentials=creds)
 
-    op_event = json.loads(event.get("body"))
 
     op_event = OpenpathEvent(
-        op_event.get("entry"), op_event.get("userId"), int(op_event.get("timestamp"))
+        op_event.get("entry"), int(op_event.get("userId")), int(op_event.get("timestamp"))
     )
 
     op_user = OpenpathUser(op_event.user_id)
