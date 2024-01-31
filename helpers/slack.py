@@ -39,13 +39,13 @@ class SlackOps:
             headers={"Authorization": "Bearer " + SLACK_TOKEN},
             timeout=10
             )
-        
+
         if response.status_code != 200:
             logging.error("Get %s returned status code %s", url, response.status_code)
             return None
-        
+
         response = response.json()
-        
+
         if response.get("ok") is False:
             logging.error("Get %s returned error: %s", url, response.get("error"))
             return None
@@ -69,11 +69,11 @@ class SlackOps:
             headers={"Authorization": "Bearer " + SLACK_TOKEN},
             timeout=10
             )
-        
+
         if response.status_code != 200:
             logging.error("Get %s returned status code %s", url, response.status_code)
             return None
-        
+
         response = response.json()
 
         if response.get("ok") is False:
@@ -93,8 +93,20 @@ class SlackOps:
                         "type": "rich_text",
                         "elements": [
                             {
-                                "type": "text",
-                                "text": f"{self.full_name} is now on duty.",
+                                "type": "rich_text_section",
+                                "elements": [
+                                    {
+                                        "type:": "text",
+                                        "text": f"{self.full_name}",
+                                        "style": {
+                                            "bold": True
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": " is now on duty.",
+                                    }
+                                ],
                             }
                         ],
                     },
@@ -129,7 +141,7 @@ class SlackOps:
                       headers={"Content-Type": "application/json"},
                       timeout=10
                       )
-        
+
         return slack_event_payload
 
     def clock_out_slack_message(self, slack_id):
@@ -143,8 +155,20 @@ class SlackOps:
                         "type": "rich_text",
                         "elements": [
                             {
-                                "type": "text",
-                                "text": f"{self.full_name} is now off duty.",
+                                "type": "rich_text_section",
+                                "elements": [
+                                    {
+                                        "type:": "text",
+                                        "text": f"{self.full_name}",
+                                        "style": {
+                                            "bold": True
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": " is now off duty.",
+                                    }
+                                ],
                             }
                         ],
                     },
@@ -179,6 +203,6 @@ class SlackOps:
                       headers={"Content-Type": "application/json"},
                       timeout=10
                       )
-        
+
         return slack_event_payload
     

@@ -122,18 +122,30 @@ def test_clock_in_slack_message_with_user_id(user_with_email: SlackOps, mocker: 
 
 def test_clock_in_slack_message_no_user_id(no_user: SlackOps):
     assert no_user.clock_in_slack_message(None) == {
-        "blocks": [
-            {
-                "type": "rich_text",
-                "elements": [
+                "blocks": [
                     {
-                        "type": "text",
-                        "text": "Owen Hofmnan is now on duty.",
+                        "type": "rich_text",
+                        "elements": [
+                            {
+                                "type": "rich_text_section",
+                                "elements": [
+                                    {
+                                        "type:": "text",
+                                        "text": "Owen Hofmnan",
+                                        "style": {
+                                            "bold": True
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": " is now on duty.",
+                                    }
+                                ],
+                            }
+                        ],
                     },
                 ],
-            },
-        ],
-    }
+            }
 
 def test_clock_out_slack_message_with_user_id(user_with_email: SlackOps, mocker: MockerFixture):
     mocker.patch(
@@ -167,15 +179,27 @@ def test_clock_out_slack_message_with_user_id(user_with_email: SlackOps, mocker:
 
 def test_clock_out_slack_message_no_user_id(no_user: SlackOps):
     assert no_user.clock_out_slack_message(None) == {
-        "blocks": [
-            {
-                "type": "rich_text",
-                "elements": [
+                "blocks": [
                     {
-                        "type": "text",
-                        "text": "Owen Hofmnan is now off duty.",
+                        "type": "rich_text",
+                        "elements": [
+                            {
+                                "type": "rich_text_section",
+                                "elements": [
+                                    {
+                                        "type:": "text",
+                                        "text": "Owen Hofmnan",
+                                        "style": {
+                                            "bold": True
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": " is now off duty.",
+                                    }
+                                ],
+                            }
+                        ],
                     },
                 ],
-            },
-        ],
-    }
+            }

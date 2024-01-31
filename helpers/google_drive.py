@@ -111,7 +111,7 @@ def batch_update_new_sheet(sheet, file_id, new_sheet_id, user_full_name):
                                 "values": [
                                     {
                                         "userEnteredValue": {
-                                            "stringValue": f"On-Duty Volunteer Timesheet - {user_full_name}"
+                                            "stringValue": f"On-Duty Volunteer Timesheet - {user_full_name}" #pylint: disable=line-too-long
                                         },
                                         "userEnteredFormat": {
                                             "textFormat": {"bold": True},
@@ -297,24 +297,33 @@ def get_folder_id(folder_name):
     drive_service = build("drive", "v3", credentials=creds)
 
     search = f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}'"
-    fields = 'files(id, name, mimeType)'
-    results = drive_service.files().list( # pylint: disable=maybe-no-member
-            q=search,
-            fields=fields,
-            supportsAllDrives=True,
-            driveId=DRIVE_ID,
-            corpora="drive",
-            includeItemsFromAllDrives=True).execute()
+    results = asmbly_drive_file_search(drive_service, search)
 
     items = results.get('files', [])
 
-    if not items:
+    if len(items) == 0:
         return {}
 
     return items[0]
     #for item in items:
     #    print(u'{0} ({1})- {2}'.format(item['name'], item['id'],
     #    item['mimeType']))
+
+def asmbly_drive_file_search(drive_service, search_query):
+    """
+    Search drive for files.
+    """
+
+    fields = 'files(id, name, mimeType)'
+    results = drive_service.files().list( # pylint: disable=maybe-no-member
+            q=search_query,
+            fields=fields,
+            supportsAllDrives=True,
+            driveId=DRIVE_ID,
+            corpora="drive",
+            includeItemsFromAllDrives=True).execute()
+
+    return results
 
 
 class SlideshowOperations:
@@ -332,30 +341,17 @@ class SlideshowOperations:
         """
         Add volunteer to slideshow.
         """
-        volunteer_slide = (
-            self.drive_service.files()
-            .list(
-                q=f"""
-                trashed=false and name="{self.volunteer_name}"
-                and "{self.volunteer_slides_folder_id}" in parents
-            """,
-            includeItemsFromAllDrives=True,
-            supportsAllDrives=True,
-            corpora="drive",
-            driveId=DRIVE_ID,
-            )
-            .execute()
-        )
+        if self.volunteer_slides_folder_id is None:
+            logging.error("Folder 'Volunteer Slides' not found")
+            return
+
+        volunteer_slide = self.slide_search(self.volunteer_name, self.volunteer_slides_folder_id)
 
         if len(volunteer_slide.get("files")) > 0:
-            self.drive_service.files().copy(
-                fileId=volunteer_slide.get("files")[0].get("id"),
-                body={
-                    "name": self.volunteer_name,
-                    "parents": [self.slideshow_folder_id],
-                },
-                supportsAllDrives=True,
-            ).execute()
+
+            slide_file_id = volunteer_slide.get("files")[0].get("id")
+
+            self.add_slide(slide_file_id)
         else:
             logging.info("No slide for %s, consider adding them", self.volunteer_name)
 
@@ -363,11 +359,25 @@ class SlideshowOperations:
         """
         Remove volunteer from slideshow.
         """
+        if self.slideshow_folder_id is None:
+            logging.error("Folder '____LobbyTV' not found")
+            return
 
-        volunteer_slide = self.drive_service.files().list(
+        volunteer_slide = self.slide_search(self.volunteer_name, self.slideshow_folder_id)
+
+        if len(volunteer_slide.get("files")) > 0:
+            slide_file_id = volunteer_slide.get("files")[0].get("id")
+
+            self.trash_slide(slide_file_id)
+
+    def slide_search(self, volunteer_name: str, folder_id: str):
+        """
+        Search for a file.
+        """
+        return self.drive_service.files().list(
             q=f"""
-                trashed=false and name="{self.volunteer_name}"
-                and "{self.slideshow_folder_id}" in parents
+                trashed=false and name="{volunteer_name}"
+                and "{folder_id}" in parents
             """,
             includeItemsFromAllDrives=True,
             supportsAllDrives=True,
@@ -375,11 +385,25 @@ class SlideshowOperations:
             driveId=DRIVE_ID,
         ).execute()
 
-        if len(volunteer_slide.get("files")) > 0:
-            slide_file_id = volunteer_slide.get("files")[0].get("id")
+    def add_slide(self, slide_file_id: str):
+        """
+        Add slide to slideshow.
+        """
+        self.drive_service.files().copy(
+            fileId=slide_file_id,
+            body={
+                "name": self.volunteer_name,
+                "parents": [self.slideshow_folder_id],
+            },
+            supportsAllDrives=True,
+        ).execute()
 
-            self.drive_service.files().update(
-                fileId=slide_file_id,
-                body={"trashed": True},
-                supportsAllDrives=True,
-            ).execute()
+    def trash_slide(self, slide_file_id: str):
+        """
+        Trash slide.
+        """
+        self.drive_service.files().update(
+            fileId=slide_file_id,
+            body={"trashed": True},
+            supportsAllDrives=True,
+        ).execute()
