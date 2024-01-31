@@ -24,6 +24,6 @@ example_call = {
         "time": "30/Jan/2024:15:54:52 +0000",
         "timeEpoch": 1706630092598,
     },
-    "body": f'{{"userId":"7385407","timestamp":"1706630094","entryId":"Instructors Locker","apiKey":"{INTERNAL_API_KEY}"}}',
+    "body": f'{{"userId":"13804489","timestamp":"1706630094","entryId":"Instructors Locker","apiKey":"{INTERNAL_API_KEY}"}}',
     "isBase64Encoded": False,
 }

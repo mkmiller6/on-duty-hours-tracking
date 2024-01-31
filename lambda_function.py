@@ -9,11 +9,11 @@ import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dataclasses import dataclass
-import requests
 
 from googleapiclient.discovery import build
 
 from helpers.openPathUtil import getUser
+from helpers.slack import SlackOps
 from helpers.google_drive import (
     batch_update_new_sheet,
     get_access_token,
@@ -29,7 +29,6 @@ if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
         PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
         DRIVE_ID,
-        SLACK_WEBHOOK_URL
     )
 else:
     from config import (
@@ -39,7 +38,6 @@ else:
         PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
         DRIVE_ID,
-        SLACK_WEBHOOK_URL
     )
 
 logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
@@ -86,12 +84,15 @@ class OpenpathUser:
     first_name: str = None
     last_name: str = None
     full_name: str = None
+    email: str = None
 
     def __post_init__(self):
         self.user_data = getUser(self.user_id)
         self.first_name = self.user_data.get("identity").get("firstName")
         self.last_name = self.user_data.get("identity").get("lastName")
         self.full_name = f"{self.first_name} {self.last_name}"
+        self.email = self.user_data.get("identity").get("email")
+
 
 
 def handler(event, _):
@@ -240,19 +241,13 @@ def handler(event, _):
 
         slideshows_ops.add_volunteer_to_slideshow()
 
-        slack_event_payload = {
-            "blocks": [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f"*{op_user.full_name}* is now on duty.",
-                    },
-                },
-            ]
-        }
+        slack_user = SlackOps(op_user.email, op_user.full_name)
 
-        requests.post(SLACK_WEBHOOK_URL, json=slack_event_payload, timeout=10)
+        user_id = slack_user.get_slack_user_id()
+        if user_id is None:
+            logging.error("Slack user not found for: %s", op_user.full_name)
+
+        slack_user.clock_in_slack_message(user_id)
 
     elif op_event.entry == "Clock Out":
         # Update the user's log sheet with the clock-out time
@@ -305,18 +300,9 @@ def handler(event, _):
 
         slideshows_ops.remove_volunteer_from_slideshow()
 
-        slack_event_payload = {
-            "blocks": [
-                {
-                    "type": "section",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": f"*{op_user.full_name}* has ended their shift.",
-                    },
-                },
-            ]
-        }
+        slack_user = SlackOps(op_user.email, op_user.full_name)
 
-        requests.post(SLACK_WEBHOOK_URL, json=slack_event_payload, timeout=10)
+        slack_user.clock_out_slack_message(slack_user.get_slack_user_id())
+
 
     return {"statusCode": 200}

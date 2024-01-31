@@ -19,6 +19,7 @@ ENCRYPTED_PARENT_FOLDER_ID = os.environ['PARENT_FOLDER_ID']
 ENCRYPTED_DRIVE_ID = os.environ['DRIVE_ID']
 
 ENCRYPTED_SLACK_WEBHOOK_URL = os.environ['SLACK_WEBHOOK_URL']
+ENCRYPTED_SLACK_TOKEN = os.environ['SLACK_TOKEN']
 
 ENCRYPTED_PRIV_SA = os.environ['PRIV_SA']
 ENCRYPTED_INTERNAL_API_KEY = os.environ['INTERNAL_API_KEY']
@@ -88,6 +89,11 @@ INTERNAL_API_KEY = boto3.client('kms').decrypt(
 
 SLACK_WEBHOOK_URL = boto3.client('kms').decrypt(
     CiphertextBlob=b64decode(ENCRYPTED_SLACK_WEBHOOK_URL),
+    EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
+)['Plaintext'].decode('utf-8')
+
+SLACK_TOKEN = boto3.client('kms').decrypt(
+    CiphertextBlob=b64decode(ENCRYPTED_SLACK_TOKEN),
     EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
 )['Plaintext'].decode('utf-8')
 
