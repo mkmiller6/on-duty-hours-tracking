@@ -50,11 +50,11 @@ def handler(event, _):
     clock-out buttons.
     """
 
-    logging.info("Received OP event: %s", event)
-
     try:
         op_event = json.loads(event.get("body"))
-        logging.info("Parsed event: %s", op_event)
+        parsed_event = op_event
+        del parsed_event["apiKey"]
+        logging.info("Parsed event: %s", parsed_event)
     except Exception as e:
         logging.error("Error parsing event: %s", e)
         raise

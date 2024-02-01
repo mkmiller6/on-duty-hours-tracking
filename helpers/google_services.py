@@ -289,7 +289,7 @@ class SheetsOperations:
 
     def add_clock_in_entry_to_timesheet(self, log_entry: tuple, master=False):
         """
-        Add clock-in entry to individual timesheet.
+        Add clock-in entry to individual timesheet or master log.
         """
         self.sheet.values().append(
             spreadsheetId=self.master_sheet_id if master else self.volunteer_timesheet_id,
@@ -300,7 +300,7 @@ class SheetsOperations:
 
     def add_clock_out_entry_to_timesheet(self, log_entry: str, master=False):
         """
-        Add clock-out entry to timesheet.
+        Add clock-out entry to individual timesheet or master log.
         """
         current_rows = (
             self.sheet.values()
@@ -362,13 +362,11 @@ class SheetsOperations:
             self.sheet.get(spreadsheetId=self.master_sheet_id).execute().get("sheets")
         )
 
-        exists = False
         for sheet in all_sheets:
             if sheet.get("properties").get("title") == self.volunteer_name:
-                exists = True
-                return exists
+                return True
 
-        return exists
+        return False
 
     def create_odv_sheet_in_master_spreadsheet(self):
         """
@@ -488,7 +486,10 @@ class SheetsOperations:
                                     "values": [
                                         {
                                             "userEnteredValue": {
-                                                "stringValue": f"On-Duty Volunteer Timesheet - {user_full_name}"  # pylint: disable=line-too-long
+                                                "stringValue": (
+                                                    f"On-Duty Volunteer Timesheet - "
+                                                    f"{user_full_name}"
+                                                )
                                             },
                                             "userEnteredFormat": {
                                                 "textFormat": {"bold": True},

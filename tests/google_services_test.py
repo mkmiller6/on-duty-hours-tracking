@@ -34,12 +34,12 @@ def build(mocker: MockerFixture):
 
 def test_get_folder_id_with_file(access_token, build, mocker: MockerFixture):
     mocker.patch(
-        "helpers.google_drive.get_access_token",
+        "helpers.google_services.get_access_token",
     ).return_value = access_token
 
-    mocker.patch("helpers.google_drive.build").return_value = build
+    mocker.patch("helpers.google_services.build").return_value = build
 
-    mocker.patch("helpers.google_drive.asmbly_drive_file_search").return_value = {
+    mocker.patch("helpers.google_services.asmbly_drive_file_search").return_value = {
         "files": [
             {
                 "id": "123",
@@ -58,12 +58,12 @@ def test_get_folder_id_with_file(access_token, build, mocker: MockerFixture):
 
 def test_get_folder_id_no_file(access_token, build, mocker: MockerFixture):
     mocker.patch(
-        "helpers.google_drive.get_access_token",
+        "helpers.google_services.get_access_token",
     ).return_value = access_token
 
-    mocker.patch("helpers.google_drive.build").return_value = build
+    mocker.patch("helpers.google_services.build").return_value = build
 
-    mocker.patch("helpers.google_drive.asmbly_drive_file_search").return_value = {
+    mocker.patch("helpers.google_services.asmbly_drive_file_search").return_value = {
         "files": []
     }
 
@@ -152,7 +152,7 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.get_folder_id"
+            "helpers.google_services.get_folder_id"
         ).side_effect = mock_get_folder_id_with_slideshow_folder
 
         return SlideshowOperations(drive_service, volunteer_name)
@@ -166,7 +166,7 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.get_folder_id"
+            "helpers.google_services.get_folder_id"
         ).side_effect = mock_get_folder_id_with_volunteer_folder
 
         return SlideshowOperations(drive_service, volunteer_name)
@@ -180,7 +180,7 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.get_folder_id"
+            "helpers.google_services.get_folder_id"
         ).side_effect = mock_get_folder_id_with_both_folders
 
         return SlideshowOperations(drive_service, volunteer_name)
@@ -194,7 +194,7 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.get_folder_id"
+            "helpers.google_services.get_folder_id"
         ).side_effect = mock_get_folder_id_with_no_folder
 
         return SlideshowOperations(drive_service, volunteer_name)
@@ -222,11 +222,11 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_with_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.add_slide"
+            "helpers.google_services.SlideshowOperations.add_slide"
         )
 
         slideshow_operations_with_both_folders.add_volunteer_to_slideshow()
@@ -250,11 +250,11 @@ class TestSlideshowOperations:
         caplog
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_no_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.add_slide"
+            "helpers.google_services.SlideshowOperations.add_slide"
         )
 
         slideshow_operations_with_both_folders.add_volunteer_to_slideshow()
@@ -281,11 +281,11 @@ class TestSlideshowOperations:
     ):
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.add_slide"
+            "helpers.google_services.SlideshowOperations.add_slide"
         )
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         )
 
         result = slideshow_operations_with_slideshow_folder.add_volunteer_to_slideshow()
@@ -308,11 +308,11 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_with_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.add_slide"
+            "helpers.google_services.SlideshowOperations.add_slide"
         )
 
         slideshow_operations_with_volunteer_folder.add_volunteer_to_slideshow()
@@ -336,11 +336,11 @@ class TestSlideshowOperations:
         caplog
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_no_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.add_slide"
+            "helpers.google_services.SlideshowOperations.add_slide"
         )
 
         slideshow_operations_with_volunteer_folder.add_volunteer_to_slideshow()
@@ -366,11 +366,11 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_with_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.trash_slide"
+            "helpers.google_services.SlideshowOperations.trash_slide"
         )
 
         slideshow_operations_with_both_folders.remove_volunteer_from_slideshow()
@@ -393,11 +393,11 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_no_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.trash_slide"
+            "helpers.google_services.SlideshowOperations.trash_slide"
         )
 
         slideshow_operations_with_both_folders.remove_volunteer_from_slideshow()
@@ -418,11 +418,11 @@ class TestSlideshowOperations:
         caplog
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.trash_slide"
+            "helpers.google_services.SlideshowOperations.trash_slide"
         )
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         )
 
         result = slideshow_operations_with_volunteer_folder.remove_volunteer_from_slideshow()
@@ -445,11 +445,11 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_with_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.trash_slide"
+            "helpers.google_services.SlideshowOperations.trash_slide"
         )
 
         slideshow_operations_with_slideshow_folder.remove_volunteer_from_slideshow()
@@ -472,11 +472,11 @@ class TestSlideshowOperations:
         mocker: MockerFixture,
     ):
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.slide_search"
+            "helpers.google_services.SlideshowOperations.slide_search"
         ).return_value = slide_search_no_results
 
         mocker.patch(
-            "helpers.google_drive.SlideshowOperations.trash_slide"
+            "helpers.google_services.SlideshowOperations.trash_slide"
         )
 
         slideshow_operations_with_slideshow_folder.remove_volunteer_from_slideshow()

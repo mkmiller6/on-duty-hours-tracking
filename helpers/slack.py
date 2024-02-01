@@ -23,6 +23,7 @@ class SlackOps:
     """
     def __init__(self, user_email, full_name):
         self.webhook_url = SLACK_WEBHOOK_URL
+        self.token = SLACK_TOKEN
         self.user_email = user_email
         self.full_name = full_name
 
@@ -36,7 +37,7 @@ class SlackOps:
         response = requests.get(
             url,
             params=params,
-            headers={"Authorization": "Bearer " + SLACK_TOKEN},
+            headers={"Authorization": "Bearer " + self.token},
             timeout=10
             )
 
@@ -66,7 +67,7 @@ class SlackOps:
         response = requests.get(
             url,
             params=params,
-            headers={"Authorization": "Bearer " + SLACK_TOKEN},
+            headers={"Authorization": "Bearer " + self.token},
             timeout=10
             )
 
@@ -136,7 +137,7 @@ class SlackOps:
                 ]
             }
 
-        requests.post(SLACK_WEBHOOK_URL,
+        requests.post(self.webhook_url,
                       json=slack_event_payload,
                       headers={"Content-Type": "application/json"},
                       timeout=10
@@ -198,7 +199,7 @@ class SlackOps:
                 ]
             }
 
-        requests.post(SLACK_WEBHOOK_URL,
+        requests.post(self.webhook_url,
                       json=slack_event_payload,
                       headers={"Content-Type": "application/json"},
                       timeout=10
