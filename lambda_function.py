@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 
 from helpers.openpath_classes import OpenpathUser, OpenpathEvent
 from helpers.slack import SlackOps
-from helpers.google_drive import (
+from helpers.google_services import (
     get_access_token,
     SlideshowOperations,
     SheetsOperations,

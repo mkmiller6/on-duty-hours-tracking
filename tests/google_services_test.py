@@ -6,7 +6,7 @@ from pytest_mock import MockerFixture
 
 from googleapiclient.discovery import Resource
 
-from helpers.google_drive import (
+from helpers.google_services import (
     get_folder_id,
     SlideshowOperations,
 )
