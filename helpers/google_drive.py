@@ -10,260 +10,25 @@ import google.auth.transport.requests
 from googleapiclient.discovery import build
 
 if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
-    from credentials import key_file, priv_sa, DRIVE_ID
+    from credentials import (
+        key_file,
+        priv_sa,
+        DRIVE_ID,
+        MASTER_LOG_SPREADSHEET_ID,
+        TEMPLATE_SHEET_ID,
+        PARENT_FOLDER_ID,
+    )
 else:
-    from config import key_file, priv_sa, DRIVE_ID
+    from config import (
+        key_file,
+        priv_sa,
+        DRIVE_ID,
+        MASTER_LOG_SPREADSHEET_ID,
+        TEMPLATE_SHEET_ID,
+        PARENT_FOLDER_ID,
+    )
 
-logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
-
-def batch_update_copied_spreadsheet(
-    sheet, file_id, copied_sheet_id, protected_range_id
-):
-    """
-    Batch update the copied spreadsheet. Updates protected range to allow Asmbly groups
-    to edit, and formats the Hours column to Duration.
-    """
-    sheet.batchUpdate(
-        spreadsheetId=file_id,
-        body={
-            "requests": [
-                {
-                    "updateProtectedRange": {
-                        "protectedRange": {
-                            "protectedRangeId": protected_range_id,
-                            "range": {
-                                "sheetId": copied_sheet_id,
-                                "startColumnIndex": 0,
-                                "endColumnIndex": 4,
-                            },
-                            "description": "On-Duty Hours",
-                            "warningOnly": False,
-                            "editors": {
-                                "users": [
-                                    "admin@asmbly.org",
-                                    priv_sa
-                                ],
-                                "groups": [
-                                    "membership@asmbly.org",
-                                    "leadership@asmbly.org",
-                                    "classes@asmbly.org",
-                                ],
-                            },
-                        },
-                        "fields": "*",
-                    }
-                },
-                {
-                    "updateCells": {
-                        "rows": [
-                            {
-                                "values": [
-                                    {
-                                        "userEnteredFormat": {
-                                            "numberFormat": {
-                                                "type": "DATE_TIME",
-                                                "pattern": "[h]:mm:ss",
-                                            }
-                                        },
-                                    },
-                                ]
-                            }
-                        ],
-                        "fields": "userEnteredFormat.numberFormat",
-                        "range": {
-                            "sheetId": copied_sheet_id,
-                            "startRowIndex": 2,
-                            "startColumnIndex": 3,
-                            "endColumnIndex": 4,
-                        },
-                    },
-                }
-            ]
-        }
-    ).execute()
-
-
-def batch_update_new_sheet(sheet, file_id, new_sheet_id, user_full_name):
-    """
-    Batch update the new sheet. Adds new sheet with volunteer's name and
-    applies formatting.
-    """
-    sheet.batchUpdate(
-        spreadsheetId=file_id,
-        body={
-            "requests": [
-                {
-                    "mergeCells": {
-                        "range": {
-                            "sheetId": new_sheet_id,
-                            "startRowIndex": 0,
-                            "endRowIndex": 1,
-                            "startColumnIndex": 0,
-                            "endColumnIndex": 4,
-                        },
-                        "mergeType": "MERGE_ALL",
-                    }
-                },
-                {
-                    "updateCells": {
-                        "rows": [
-                            {
-                                "values": [
-                                    {
-                                        "userEnteredValue": {
-                                            "stringValue": f"On-Duty Volunteer Timesheet - {user_full_name}" #pylint: disable=line-too-long
-                                        },
-                                        "userEnteredFormat": {
-                                            "textFormat": {"bold": True},
-                                            "horizontalAlignment": "CENTER",
-                                            "verticalAlignment": "MIDDLE",
-                                            "backgroundColor": {
-                                                "red": 0.635,
-                                                "green": 0.768,
-                                                "blue": 0.788,
-                                            },
-                                        },
-                                    }
-                                ]
-                            },
-                            {
-                                "values": [
-                                    {
-                                        "userEnteredValue": {"stringValue": "Date"},
-                                        "userEnteredFormat": {
-                                            "backgroundColor": {
-                                                "red": 0.635,
-                                                "green": 0.768,
-                                                "blue": 0.788,
-                                            }
-                                        },
-                                    },
-                                    {
-                                        "userEnteredValue": {"stringValue": "Time In"},
-                                        "userEnteredFormat": {
-                                            "backgroundColor": {
-                                                "red": 0.635,
-                                                "green": 0.768,
-                                                "blue": 0.788,
-                                            }
-                                        },
-                                    },
-                                    {
-                                        "userEnteredValue": {"stringValue": "Time Out"},
-                                        "userEnteredFormat": {
-                                            "backgroundColor": {
-                                                "red": 0.635,
-                                                "green": 0.768,
-                                                "blue": 0.788,
-                                            }
-                                        },
-                                    },
-                                    {
-                                        "userEnteredValue": {"stringValue": "Hours"},
-                                        "userEnteredFormat": {
-                                            "backgroundColor": {
-                                                "red": 0.635,
-                                                "green": 0.768,
-                                                "blue": 0.788,
-                                            }
-                                        },
-                                    },
-                                ]
-                            },
-                        ],
-                        "fields": "*",
-                        "start": {
-                            "sheetId": new_sheet_id,
-                            "rowIndex": 0,
-                            "columnIndex": 0,
-                        },
-                    }
-                },
-                {
-                    "updateDimensionProperties": {
-                        "range": {
-                            "sheetId": new_sheet_id,
-                            "dimension": "ROWS",
-                            "startIndex": 0,
-                            "endIndex": 1,
-                        },
-                        "properties": {"pixelSize": 48},
-                        "fields": "pixelSize",
-                    }
-                },
-                {
-                    "updateDimensionProperties": {
-                        "range": {
-                            "sheetId": new_sheet_id,
-                            "dimension": "COLUMNS",
-                            "startIndex": 4,
-                            "endIndex": 5,
-                        },
-                        "properties": {"pixelSize": 15},
-                        "fields": "pixelSize",
-                    }
-                },
-                {
-                    "addProtectedRange": {
-                        "protectedRange": {
-                            "range": {
-                                "sheetId": new_sheet_id,
-                                "startColumnIndex": 0,
-                                "endColumnIndex": 4,
-                            },
-                            "description": "On-Duty Hours",
-                            "warningOnly": False,
-                            "editors": {
-                                "users": [
-                                    "admin@asmbly.org",
-                                    priv_sa,
-                                ],
-                                "groups": [
-                                    "membership@asmbly.org",
-                                    "leadership@asmbly.org",
-                                    "classes@asmbly.org",
-                                ],
-                            },
-                        }
-                    }
-                },
-                {
-                    "updateSheetProperties": {
-                        "properties": {
-                            "sheetId": new_sheet_id,
-                            "gridProperties": {"frozenRowCount": 2},
-                        },
-                        "fields": "gridProperties.frozenRowCount",
-                    }
-                },
-                {
-                    "updateCells": {
-                        "rows": [
-                            {
-                                "values": [
-                                    {
-                                        "userEnteredFormat": {
-                                            "numberFormat": {
-                                                "type": "DATE_TIME",
-                                                "pattern": "[h]:mm:ss",
-                                            }
-                                        },
-                                    },
-                                ]
-                            }
-                        ],
-                        "fields": "userEnteredFormat.numberFormat",
-                        "range": {
-                            "sheetId": new_sheet_id,
-                            "startRowIndex": 2,
-                            "startColumnIndex": 3,
-                            "endColumnIndex": 4,
-                        },
-                    },
-                }
-            ]
-        },
-    ).execute()
+logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
 
 
 def get_access_token(impersonated_account: str, scopes: list[str]):
@@ -287,41 +52,52 @@ def get_access_token(impersonated_account: str, scopes: list[str]):
 
     return target_creds
 
+
 def get_folder_id(folder_name):
     """
     Get folder ID from folder name.
     """
 
-    creds = get_access_token(priv_sa, ["https://www.googleapis.com/auth/drive.readonly"])
+    creds = get_access_token(
+        priv_sa, ["https://www.googleapis.com/auth/drive.readonly"]
+    )
 
     drive_service = build("drive", "v3", credentials=creds)
 
-    search = f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}'"
+    search = (
+        f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}'"
+    )
     results = asmbly_drive_file_search(drive_service, search)
 
-    items = results.get('files', [])
+    items = results.get("files", [])
 
     if len(items) == 0:
         return {}
 
     return items[0]
-    #for item in items:
+    # for item in items:
     #    print(u'{0} ({1})- {2}'.format(item['name'], item['id'],
     #    item['mimeType']))
+
 
 def asmbly_drive_file_search(drive_service, search_query):
     """
     Search drive for files.
     """
 
-    fields = 'files(id, name, mimeType)'
-    results = drive_service.files().list( # pylint: disable=maybe-no-member
+    fields = "files(id, name, mimeType)"
+    results = (
+        drive_service.files()
+        .list(  # pylint: disable=maybe-no-member
             q=search_query,
             fields=fields,
             supportsAllDrives=True,
             driveId=DRIVE_ID,
             corpora="drive",
-            includeItemsFromAllDrives=True).execute()
+            includeItemsFromAllDrives=True,
+        )
+        .execute()
+    )
 
     return results
 
@@ -331,6 +107,7 @@ class SlideshowOperations:
     Class for Asmbly TV slideshow operations. Methods for adding and removing volunteers
     to the slideshow when they are actively on duty.
     """
+
     def __init__(self, drive_service, volunteer_name):
         self.drive_service = drive_service
         self.volunteer_name = volunteer_name
@@ -345,10 +122,11 @@ class SlideshowOperations:
             logging.error("Folder 'Volunteer Slides' not found")
             return
 
-        volunteer_slide = self.slide_search(self.volunteer_name, self.volunteer_slides_folder_id)
+        volunteer_slide = self.slide_search(
+            self.volunteer_name, self.volunteer_slides_folder_id
+        )
 
         if len(volunteer_slide.get("files")) > 0:
-
             slide_file_id = volunteer_slide.get("files")[0].get("id")
 
             self.add_slide(slide_file_id)
@@ -363,7 +141,9 @@ class SlideshowOperations:
             logging.error("Folder '____LobbyTV' not found")
             return
 
-        volunteer_slide = self.slide_search(self.volunteer_name, self.slideshow_folder_id)
+        volunteer_slide = self.slide_search(
+            self.volunteer_name, self.slideshow_folder_id
+        )
 
         if len(volunteer_slide.get("files")) > 0:
             slide_file_id = volunteer_slide.get("files")[0].get("id")
@@ -374,16 +154,20 @@ class SlideshowOperations:
         """
         Search for a file.
         """
-        return self.drive_service.files().list(
-            q=f"""
+        return (
+            self.drive_service.files()
+            .list(
+                q=f"""
                 trashed=false and name="{volunteer_name}"
                 and "{folder_id}" in parents
             """,
-            includeItemsFromAllDrives=True,
-            supportsAllDrives=True,
-            corpora="drive",
-            driveId=DRIVE_ID,
-        ).execute()
+                includeItemsFromAllDrives=True,
+                supportsAllDrives=True,
+                corpora="drive",
+                driveId=DRIVE_ID,
+            )
+            .execute()
+        )
 
     def add_slide(self, slide_file_id: str):
         """
@@ -406,4 +190,454 @@ class SlideshowOperations:
             fileId=slide_file_id,
             body={"trashed": True},
             supportsAllDrives=True,
+        ).execute()
+
+class DriveOperations:
+    """
+    Class for Google Drive operations. Methods for creating, searching,
+    and copying files
+    """
+
+    def __init__(self, drive_service, volunteer_name):
+        self.drive_service = drive_service
+        self.volunteer_name = volunteer_name
+        self.drive_id = DRIVE_ID
+        self.template_sheet_id = TEMPLATE_SHEET_ID
+        self.parent_folder_id = PARENT_FOLDER_ID
+
+    def check_timesheet_exists(self):
+        """
+        Check if volunteer's timesheet already exists in the shared Drive.
+        """
+        search_query = (
+            f'mimeType="application/vnd.google-apps.spreadsheet"'
+            f' and "{self.parent_folder_id}" in parents'
+            f' and name="ODV Timesheet - {self.volunteer_name}"'
+            f" and trashed = false"
+        )
+        return (
+            self.drive_service.files()
+            .list(
+                q=search_query,
+                includeItemsFromAllDrives=True,
+                supportsAllDrives=True,
+                corpora="drive",
+                driveId=self.drive_id,
+            )
+            .execute()
+            .get("files")
+        )
+
+    def create_timesheet(self):
+        """
+        Create a new timesheet for the volunteer.
+        """
+        return (
+            self.drive_service.files()
+            .copy(
+                fileId=self.template_sheet_id,
+                body={
+                    "name": f"ODV Timesheet - {self.volunteer_name}",
+                    "parents": [self.parent_folder_id],
+                },
+                supportsAllDrives=True,
+            )
+            .execute()
+            .get("id")
+        )
+
+class SheetsOperations:
+    """
+    Class for Google Sheets operations related to a specific volunteer.
+    Methods for logging clock-in and clock-out times to the volunteer's
+    individual ODV Log Sheet as well as the Master Log.
+    """
+
+    def __init__(self, sheets_service, volunteer_name, volunteer_timesheet_id):
+        self.sheets_service = sheets_service
+        self.volunteer_name = volunteer_name
+        self.master_sheet_id = MASTER_LOG_SPREADSHEET_ID
+        self.volunteer_timesheet_id = volunteer_timesheet_id
+        self.sheet = sheets_service.spreadsheets()
+
+    def initialize_copied_template(self):
+        """
+        Initialize copied template timesheet with formatting,
+        names, range protection, etc.
+        """
+        ind_sheet = (
+            self.sheet.get(spreadsheetId=self.volunteer_timesheet_id)
+            .execute()
+            .get("sheets")[0]
+        )
+
+        sheet_id = ind_sheet.get("properties").get("sheetId")
+        protected_range_id = ind_sheet.get("protectedRanges")[0].get("protectedRangeId")
+
+        self.sheet.values().append(
+            spreadsheetId=self.volunteer_timesheet_id,
+            range="Sheet1!F1:F2",
+            body={"values": [[f"Name: {self.volunteer_name}"], ["Notes/Comments"]]},
+            valueInputOption="USER_ENTERED",
+        )
+
+        self.batch_update_copied_spreadsheet(
+            self.volunteer_timesheet_id,
+            sheet_id,
+            protected_range_id,
+        )
+
+    def add_clock_in_entry_to_timesheet(self, log_entry: tuple, master=False):
+        """
+        Add clock-in entry to individual timesheet.
+        """
+        self.sheet.values().append(
+            spreadsheetId=self.master_sheet_id if master else self.volunteer_timesheet_id,
+            range=f"'{self.volunteer_name}'!A3:B" if master else "Sheet1!A3:B",
+            body={"values": [[log_entry[0], log_entry[1]]]},
+            valueInputOption="USER_ENTERED",
+        ).execute()
+
+    def add_clock_out_entry_to_timesheet(self, log_entry: str, master=False):
+        """
+        Add clock-out entry to timesheet.
+        """
+        current_rows = (
+            self.sheet.values()
+            .get(
+                spreadsheetId=self.master_sheet_id
+                if master
+                else self.volunteer_timesheet_id,
+                range=f"'{self.volunteer_name}'!A1:B" if master else "Sheet1!A1:B",
+                majorDimension="ROWS",
+            )
+            .execute()
+            .get("values")
+        )
+
+        last_row = len(current_rows)
+
+        if master:
+            self.sheet.values().update(
+                spreadsheetId=self.master_sheet_id,
+                range=(
+                    f"'{self.volunteer_name}'!C{last_row if last_row > 2 else 3}"
+                    f":D{last_row if last_row > 2 else 3}"
+                ),
+                body={
+                    "values": [
+                        [
+                            log_entry,
+                            (
+                                f"=C{last_row if last_row > 2 else 3}"
+                                f"-B{last_row if last_row > 2 else 3}"
+                            ),
+                        ]
+                    ]
+                },
+                valueInputOption="USER_ENTERED",
+            ).execute()
+
+            return
+
+        self.sheet.values().update(
+            spreadsheetId=self.volunteer_timesheet_id,
+            range=f"Sheet1!C{last_row if last_row > 2 else 3}:D{last_row if last_row > 2 else 3}",
+            body={
+                "values": [
+                    [
+                        log_entry,
+                        f"=C{last_row if last_row > 2 else 3}-B{last_row if last_row > 2 else 3}",
+                    ]
+                ]
+            },
+            valueInputOption="USER_ENTERED",
+        ).execute()
+
+    def check_master_log(self):
+        """
+        Check if a sheet already exsists in the Master Log for this volunteer.
+        """
+        all_sheets = (
+            self.sheet.get(spreadsheetId=self.master_sheet_id).execute().get("sheets")
+        )
+
+        exists = False
+        for sheet in all_sheets:
+            if sheet.get("properties").get("title") == self.volunteer_name:
+                exists = True
+                return exists
+
+        return exists
+
+    def create_odv_sheet_in_master_spreadsheet(self):
+        """
+        Create a new sheet in the Master Log for this volunteer.
+        """
+        new_sheet_id = (
+            self.sheet.batchUpdate(
+                spreadsheetId=self.master_sheet_id,
+                body={
+                    "requests": [
+                        {"addSheet": {"properties": {"title": self.volunteer_name}}}
+                    ]
+                },
+            )
+            .execute()
+            .get("replies")[0]
+            .get("addSheet")
+            .get("properties")
+            .get("sheetId")
+        )
+
+        self.batch_update_new_master_sheet(
+            self.master_sheet_id,
+            new_sheet_id,
+            self.volunteer_name,
+        )
+
+
+    def batch_update_copied_spreadsheet(
+        self, file_id, copied_sheet_id, protected_range_id
+    ):
+        """
+        Batch update the copied spreadsheet. Updates protected range to allow Asmbly groups
+        to edit, and formats the Hours column to Duration.
+        """
+        self.sheet.batchUpdate(
+            spreadsheetId=file_id,
+            body={
+                "requests": [
+                    {
+                        "updateProtectedRange": {
+                            "protectedRange": {
+                                "protectedRangeId": protected_range_id,
+                                "range": {
+                                    "sheetId": copied_sheet_id,
+                                    "startColumnIndex": 0,
+                                    "endColumnIndex": 4,
+                                },
+                                "description": "On-Duty Hours",
+                                "warningOnly": False,
+                                "editors": {
+                                    "users": ["admin@asmbly.org", priv_sa],
+                                    "groups": [
+                                        "membership@asmbly.org",
+                                        "leadership@asmbly.org",
+                                        "classes@asmbly.org",
+                                    ],
+                                },
+                            },
+                            "fields": "*",
+                        }
+                    },
+                    {
+                        "updateCells": {
+                            "rows": [
+                                {
+                                    "values": [
+                                        {
+                                            "userEnteredFormat": {
+                                                "numberFormat": {
+                                                    "type": "DATE_TIME",
+                                                    "pattern": "[h]:mm:ss",
+                                                }
+                                            },
+                                        },
+                                    ]
+                                }
+                            ],
+                            "fields": "userEnteredFormat.numberFormat",
+                            "range": {
+                                "sheetId": copied_sheet_id,
+                                "startRowIndex": 2,
+                                "startColumnIndex": 3,
+                                "endColumnIndex": 4,
+                            },
+                        },
+                    },
+                ]
+            },
+        ).execute()
+
+    def batch_update_new_master_sheet(self, file_id, new_sheet_id, user_full_name):
+        """
+        Batch update the new sheet. Adds new sheet with volunteer's name and
+        applies formatting.
+        """
+        self.sheet.batchUpdate(
+            spreadsheetId=file_id,
+            body={
+                "requests": [
+                    {
+                        "mergeCells": {
+                            "range": {
+                                "sheetId": new_sheet_id,
+                                "startRowIndex": 0,
+                                "endRowIndex": 1,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 4,
+                            },
+                            "mergeType": "MERGE_ALL",
+                        }
+                    },
+                    {
+                        "updateCells": {
+                            "rows": [
+                                {
+                                    "values": [
+                                        {
+                                            "userEnteredValue": {
+                                                "stringValue": f"On-Duty Volunteer Timesheet - {user_full_name}"  # pylint: disable=line-too-long
+                                            },
+                                            "userEnteredFormat": {
+                                                "textFormat": {"bold": True},
+                                                "horizontalAlignment": "CENTER",
+                                                "verticalAlignment": "MIDDLE",
+                                                "backgroundColor": {
+                                                    "red": 0.635,
+                                                    "green": 0.768,
+                                                    "blue": 0.788,
+                                                },
+                                            },
+                                        }
+                                    ]
+                                },
+                                {
+                                    "values": [
+                                        {
+                                            "userEnteredValue": {"stringValue": "Date"},
+                                            "userEnteredFormat": {
+                                                "backgroundColor": {
+                                                    "red": 0.635,
+                                                    "green": 0.768,
+                                                    "blue": 0.788,
+                                                }
+                                            },
+                                        },
+                                        {
+                                            "userEnteredValue": {"stringValue": "Time In"},
+                                            "userEnteredFormat": {
+                                                "backgroundColor": {
+                                                    "red": 0.635,
+                                                    "green": 0.768,
+                                                    "blue": 0.788,
+                                                }
+                                            },
+                                        },
+                                        {
+                                            "userEnteredValue": {"stringValue": "Time Out"},
+                                            "userEnteredFormat": {
+                                                "backgroundColor": {
+                                                    "red": 0.635,
+                                                    "green": 0.768,
+                                                    "blue": 0.788,
+                                                }
+                                            },
+                                        },
+                                        {
+                                            "userEnteredValue": {"stringValue": "Hours"},
+                                            "userEnteredFormat": {
+                                                "backgroundColor": {
+                                                    "red": 0.635,
+                                                    "green": 0.768,
+                                                    "blue": 0.788,
+                                                }
+                                            },
+                                        },
+                                    ]
+                                },
+                            ],
+                            "fields": "*",
+                            "start": {
+                                "sheetId": new_sheet_id,
+                                "rowIndex": 0,
+                                "columnIndex": 0,
+                            },
+                        }
+                    },
+                    {
+                        "updateDimensionProperties": {
+                            "range": {
+                                "sheetId": new_sheet_id,
+                                "dimension": "ROWS",
+                                "startIndex": 0,
+                                "endIndex": 1,
+                            },
+                            "properties": {"pixelSize": 48},
+                            "fields": "pixelSize",
+                        }
+                    },
+                    {
+                        "updateDimensionProperties": {
+                            "range": {
+                                "sheetId": new_sheet_id,
+                                "dimension": "COLUMNS",
+                                "startIndex": 4,
+                                "endIndex": 5,
+                            },
+                            "properties": {"pixelSize": 15},
+                            "fields": "pixelSize",
+                        }
+                    },
+                    {
+                        "addProtectedRange": {
+                            "protectedRange": {
+                                "range": {
+                                    "sheetId": new_sheet_id,
+                                    "startColumnIndex": 0,
+                                    "endColumnIndex": 4,
+                                },
+                                "description": "On-Duty Hours",
+                                "warningOnly": False,
+                                "editors": {
+                                    "users": [
+                                        "admin@asmbly.org",
+                                        priv_sa,
+                                    ],
+                                    "groups": [
+                                        "membership@asmbly.org",
+                                        "leadership@asmbly.org",
+                                        "classes@asmbly.org",
+                                    ],
+                                },
+                            }
+                        }
+                    },
+                    {
+                        "updateSheetProperties": {
+                            "properties": {
+                                "sheetId": new_sheet_id,
+                                "gridProperties": {"frozenRowCount": 2},
+                            },
+                            "fields": "gridProperties.frozenRowCount",
+                        }
+                    },
+                    {
+                        "updateCells": {
+                            "rows": [
+                                {
+                                    "values": [
+                                        {
+                                            "userEnteredFormat": {
+                                                "numberFormat": {
+                                                    "type": "DATE_TIME",
+                                                    "pattern": "[h]:mm:ss",
+                                                }
+                                            },
+                                        },
+                                    ]
+                                }
+                            ],
+                            "fields": "userEnteredFormat.numberFormat",
+                            "range": {
+                                "sheetId": new_sheet_id,
+                                "startRowIndex": 2,
+                                "startColumnIndex": 3,
+                                "endColumnIndex": 4,
+                            },
+                        },
+                    },
+                ]
+            },
         ).execute()

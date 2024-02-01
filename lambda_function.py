@@ -6,41 +6,33 @@ attached to the Openpath cabinet at Asmbly.
 import logging
 import os
 import json
-from datetime import datetime
-from zoneinfo import ZoneInfo
-from dataclasses import dataclass
 
 from googleapiclient.discovery import build
 
-from helpers.openPathUtil import getUser
+from helpers.openpath_classes import OpenpathUser, OpenpathEvent
 from helpers.slack import SlackOps
 from helpers.google_drive import (
-    batch_update_new_sheet,
     get_access_token,
-    batch_update_copied_spreadsheet,
-    SlideshowOperations
+    SlideshowOperations,
+    SheetsOperations,
+    DriveOperations,
 )
 
-if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
+if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import (
         priv_sa,
-        MASTER_LOG_SPREADSHEET_ID,
-        TEMPLATE_SHEET_ID,
-        PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
-        DRIVE_ID,
     )
 else:
     from config import (
         priv_sa,
-        MASTER_LOG_SPREADSHEET_ID,
-        TEMPLATE_SHEET_ID,
-        PARENT_FOLDER_ID,
         INTERNAL_API_KEY,
-        DRIVE_ID,
     )
 
-logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
+# Suppress disovery cache warnings
+logging.getLogger("googleapiclient.discovery_cache").setLevel(logging.ERROR)
+
+# AWS Lambda runtime has its own root logger. Set level to INFO
 logging.getLogger().setLevel(logging.INFO)
 
 
@@ -50,49 +42,6 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/spreadsheets",
 ]
-
-
-@dataclass
-class OpenpathEvent:
-    """
-    Class to hold Openpath event data.
-    """
-
-    entry: str
-    user_id: int
-    timestamp: int
-    timestamp_datetime: datetime = None
-    date: str = None
-    time: str = None
-
-    def __post_init__(self):
-        self.timestamp_datetime = datetime.fromtimestamp(
-            self.timestamp, tz=ZoneInfo("America/Chicago")
-        )
-        self.date = self.timestamp_datetime.strftime("%m/%d/%Y")
-        self.time = self.timestamp_datetime.strftime("%I:%M %p")
-
-
-@dataclass
-class OpenpathUser:
-    """
-    Class to hold Openpath user data.
-    """
-
-    user_id: int
-    user_data: dict = None
-    first_name: str = None
-    last_name: str = None
-    full_name: str = None
-    email: str = None
-
-    def __post_init__(self):
-        self.user_data = getUser(self.user_id)
-        self.first_name = self.user_data.get("identity").get("firstName")
-        self.last_name = self.user_data.get("identity").get("lastName")
-        self.full_name = f"{self.first_name} {self.last_name}"
-        self.email = self.user_data.get("identity").get("email")
-
 
 
 def handler(event, _):
@@ -120,189 +69,78 @@ def handler(event, _):
     drive_service = build("drive", "v3", credentials=creds)
     sheets_service = build("sheets", "v4", credentials=creds)
 
-
     op_event = OpenpathEvent(
-        op_event.get("entryId"), int(op_event.get("userId")), int(op_event.get("timestamp"))
+        op_event.get("entryId"),
+        int(op_event.get("userId")),
+        int(op_event.get("timestamp")),
     )
 
     op_user = OpenpathUser(op_event.user_id)
 
-    slideshows_ops = SlideshowOperations(
-        drive_service, op_user.full_name
-    )
+    slideshows_ops = SlideshowOperations(drive_service, op_user.full_name)
+
+    drive_ops = DriveOperations(drive_service, op_user.full_name)
+
+    slack_user = SlackOps(op_user.email, op_user.full_name)
 
     logging.info("Volunteer: %s", op_user.full_name)
 
     # Check if On-Duty hours Google Sheet already exsists for this user.
     # If not, copy the template sheet.
-    existing_sheet_check = (
-        drive_service.files() # pylint: disable=maybe-no-member
-        .list(
-            q=f"""
-                mimeType="application/vnd.google-apps.spreadsheet"
-                and trashed=false and "{PARENT_FOLDER_ID}" in parents
-                and name="ODV Timesheet - {op_user.full_name}"
-            """,
-            includeItemsFromAllDrives=True,
-            supportsAllDrives=True,
-            corpora="drive",
-            driveId=DRIVE_ID,
-        )
-        .execute()
-    )
+    existing_sheet_check = drive_ops.check_timesheet_exists()
 
     # Spreadsheet columns are: Date, Time In, Time Out, Hours (calculated)
-    sheet = sheets_service.spreadsheets()  # pylint: disable=maybe-no-member
-
-    if len(existing_sheet_check.get("files")) > 0:
-        sheet_id = existing_sheet_check.get("files")[0].get("id")
+    if len(existing_sheet_check) > 0:
+        timesheet_id = existing_sheet_check[0].get("id")
+        sheets_ops = SheetsOperations(sheets_service, op_user.full_name, timesheet_id)
     else:
-        sheet_id = (
-            drive_service.files() # pylint: disable=maybe-no-member
-            .copy(
-                fileId=TEMPLATE_SHEET_ID,
-                body={
-                    "name": f"ODV Timesheet - {op_user.full_name}",
-                    "parents": [PARENT_FOLDER_ID],
-                },
-                supportsAllDrives=True,
-            )
-            .execute().get("id")
-        )
+        timesheet_id = drive_ops.create_timesheet()
+        sheets_ops = SheetsOperations(sheets_service, op_user.full_name, timesheet_id)
 
-        ind_sheet = sheet.get(
-            spreadsheetId=sheet_id,
-        ).execute().get("sheets")[0]
-
-        ind_sheet_id = ind_sheet.get("properties").get("sheetId")
-        protected_range_id = ind_sheet.get("protectedRanges")[0].get("protectedRangeId")
-
-        sheet.values().append(
-            spreadsheetId=sheet_id,
-            range="Sheet1!F1:F2",
-            body={"values": [[f"Name: {op_user.full_name}"], ["Notes/Comments"]]},
-            valueInputOption="USER_ENTERED",
-        ).execute()
-
-        batch_update_copied_spreadsheet(sheet, sheet_id, ind_sheet_id, protected_range_id)
-
+        # Initialize the copied template with volunteer name,
+        # range protection, duration format, etc.
+        sheets_ops.initialize_copied_template()
 
     # TODO: Change this entry name to Clock-in entry name when ready to deploy
     if op_event.entry == "Instructors Locker":
-        # Append to user's log sheet
-        sheet.values().append(
-            spreadsheetId=sheet_id,
-            range="Sheet1!A3:B",
-            body={"values": [[op_event.date, op_event.time]]},
-            valueInputOption="USER_ENTERED",
-        ).execute()
+        # Append clock-in time to user's log sheet
+        sheets_ops.add_clock_in_entry_to_timesheet((op_event.date, op_event.time))
 
         # Check if sheet already exists for this volunteer in the master log sheet.
+        exists = sheets_ops.check_master_log()
+
         # If not, create it.
-        odv_sheets = (
-            sheet.get(spreadsheetId=MASTER_LOG_SPREADSHEET_ID).execute().get("sheets")
-        )
-        exists = False
-        for odv_sheet in odv_sheets:
-            if odv_sheet.get("properties").get("title") == f"{op_user.full_name}":
-                exists = True
-                break
-
         if not exists:
-            new_sheet = sheet.batchUpdate(
-                spreadsheetId=MASTER_LOG_SPREADSHEET_ID,
-                body={
-                    "requests": [
-                        {"addSheet": {"properties": {"title": f"{op_user.full_name}"}}}
-                    ]
-                },
-            ).execute()
+            sheets_ops.create_odv_sheet_in_master_spreadsheet()
 
-            new_sheet_id = (
-                new_sheet.get("replies")[0]
-                .get("addSheet")
-                .get("properties")
-                .get("sheetId")
-            )
+        # Update the master sheet with the clock-in time
+        sheets_ops.add_clock_in_entry_to_timesheet(
+            (op_event.date, op_event.time), master=True
+        )
 
-            batch_update_new_sheet(
-                sheet,
-                MASTER_LOG_SPREADSHEET_ID,
-                new_sheet_id,
-                op_user.full_name
-            )
-
-        sheet.values().append(
-            spreadsheetId=MASTER_LOG_SPREADSHEET_ID,
-            range=f"'{op_user.full_name}'!A3:B",
-            body={"values": [[op_event.date, op_event.time]]},
-            valueInputOption="USER_ENTERED",
-        ).execute()
-
+        # Add volunteer to the TV slideshow if they have a corresponding slide
         slideshows_ops.add_volunteer_to_slideshow()
 
-        slack_user = SlackOps(op_user.email, op_user.full_name)
-
+        # Lookup Slack user ID
         user_id = slack_user.get_slack_user_id()
         if user_id is None:
             logging.error("Slack user not found for: %s", op_user.full_name)
 
+        # Send Slack message notifying the On-duty channel that the volunteer has clocked in.
+        # If user_id is not None, the message will @mention the volunteer.
+        # If user_id is None, the message will just contain the volunteer's bolded name.
         slack_user.clock_in_slack_message(user_id)
 
     elif op_event.entry == "Clock Out":
         # Update the user's log sheet with the clock-out time
-        rows = sheet.values().get(
-            spreadsheetId=sheet_id,
-            range="Sheet1!A1:B",
-            majorDimension="ROWS",
-            ).execute().get("values")
-        last_row = len(rows)
-
-        sheet.values().update(
-            spreadsheetId=sheet_id,
-            range=f"Sheet1!C{last_row if last_row > 2 else 3}:D{last_row if last_row > 2 else 3}",
-            body={
-                "values": [
-                    [
-                        op_event.time,
-                        f"=C{last_row if last_row > 2 else 3}-B{last_row if last_row > 2 else 3}",
-                    ]
-                ]
-            },
-            valueInputOption="USER_ENTERED",
-        ).execute()
+        sheets_ops.add_clock_out_entry_to_timesheet(op_event.time)
 
         # Update the master sheet with the clock-out time
-        rows = (
-            sheet.values()
-            .get(
-                spreadsheetId=MASTER_LOG_SPREADSHEET_ID,
-                range=f"'{op_user.full_name}'!A1:B",
-                majorDimension="ROWS",
-            )
-            .execute().get("values")
-        )
-        last_row = len(rows)
+        sheets_ops.add_clock_out_entry_to_timesheet(op_event.time, master=True)
 
-        sheet.values().update(
-            spreadsheetId=MASTER_LOG_SPREADSHEET_ID,
-            range=f"'{op_user.full_name}'!C{last_row if last_row > 2 else 3}:D{last_row if last_row > 2 else 3}",
-            body={
-                "values": [
-                    [
-                        op_event.time,
-                        f"=C{last_row if last_row > 2 else 3}-B{last_row if last_row > 2 else 3}",
-                    ]
-                ]
-            },
-            valueInputOption="USER_ENTERED",
-        ).execute()
-
+        # Remove volunteer from the TV slideshow if they have a corresponding slide
         slideshows_ops.remove_volunteer_from_slideshow()
-
-        slack_user = SlackOps(op_user.email, op_user.full_name)
 
         slack_user.clock_out_slack_message(slack_user.get_slack_user_id())
 
-
-    return {"statusCode": 200}
+    return
