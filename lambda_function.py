@@ -13,7 +13,6 @@ from helpers.openpath_classes import OpenpathUser, OpenpathEvent
 from helpers.slack import SlackOps
 from helpers.google_services import (
     get_access_token,
-    SlideshowOperations,
     SheetsOperations,
     DriveOperations,
 )
@@ -52,7 +51,7 @@ def handler(event, _):
 
     try:
         op_event = json.loads(event.get("body"))
-        parsed_event = op_event
+        parsed_event = op_event.copy()
         del parsed_event["apiKey"]
         logging.info("Parsed event: %s", parsed_event)
     except Exception as e:
@@ -61,7 +60,9 @@ def handler(event, _):
 
     if op_event.get("apiKey") != INTERNAL_API_KEY:
         logging.error("Invalid API key")
-        return
+        return {
+            "statusCode": 400,
+        }
 
     creds = get_access_token(priv_sa, SCOPES)
 
@@ -76,8 +77,6 @@ def handler(event, _):
     )
 
     op_user = OpenpathUser(op_event.user_id)
-
-    slideshows_ops = SlideshowOperations(drive_service, op_user.full_name)
 
     drive_ops = DriveOperations(drive_service, op_user.full_name)
 
@@ -101,8 +100,7 @@ def handler(event, _):
         # range protection, duration format, etc.
         sheets_ops.initialize_copied_template()
 
-    # TODO: Change this entry name to Clock-in entry name when ready to deploy
-    if op_event.entry == "Instructors Locker":
+    if op_event.entry == "Clock In":
         # Append clock-in time to user's log sheet
         sheets_ops.add_clock_in_entry_to_timesheet((op_event.date, op_event.time))
 
@@ -119,7 +117,7 @@ def handler(event, _):
         )
 
         # Add volunteer to the TV slideshow if they have a corresponding slide
-        slideshows_ops.add_volunteer_to_slideshow()
+        drive_ops.add_volunteer_to_slideshow()
 
         # Lookup Slack user ID
         user_id = slack_user.get_slack_user_id()
@@ -139,8 +137,8 @@ def handler(event, _):
         sheets_ops.add_clock_out_entry_to_timesheet(op_event.time, master=True)
 
         # Remove volunteer from the TV slideshow if they have a corresponding slide
-        slideshows_ops.remove_volunteer_from_slideshow()
+        drive_ops.remove_volunteer_from_slideshow()
 
         slack_user.clock_out_slack_message(slack_user.get_slack_user_id())
 
-    return
+    return {"statusCode": 200}

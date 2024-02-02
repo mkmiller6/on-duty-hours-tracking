@@ -4,10 +4,9 @@ Helper functions for interacting with Google Discovery APIs.
 import os
 import logging
 
-from google.auth import impersonated_credentials
+from google.auth.impersonated_credentials import Credentials as ImpersonatedCredentials
 from google.oauth2.service_account import Credentials
 import google.auth.transport.requests
-from googleapiclient.discovery import build
 
 if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import (
@@ -40,7 +39,7 @@ def get_access_token(impersonated_account: str, scopes: list[str]):
     else:
         credentials = Credentials.from_service_account_file(key_file)
 
-    target_creds = impersonated_credentials.Credentials(
+    target_creds = ImpersonatedCredentials(
         source_credentials=credentials,
         target_principal=impersonated_account,
         target_scopes=scopes,
@@ -53,66 +52,22 @@ def get_access_token(impersonated_account: str, scopes: list[str]):
     return target_creds
 
 
-def get_folder_id(folder_name):
+class DriveOperations:
     """
-    Get folder ID from folder name.
-    """
-
-    creds = get_access_token(
-        priv_sa, ["https://www.googleapis.com/auth/drive.readonly"]
-    )
-
-    drive_service = build("drive", "v3", credentials=creds)
-
-    search = (
-        f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}'"
-    )
-    results = asmbly_drive_file_search(drive_service, search)
-
-    items = results.get("files", [])
-
-    if len(items) == 0:
-        return {}
-
-    return items[0]
-    # for item in items:
-    #    print(u'{0} ({1})- {2}'.format(item['name'], item['id'],
-    #    item['mimeType']))
-
-
-def asmbly_drive_file_search(drive_service, search_query):
-    """
-    Search drive for files.
-    """
-
-    fields = "files(id, name, mimeType)"
-    results = (
-        drive_service.files()
-        .list(  # pylint: disable=maybe-no-member
-            q=search_query,
-            fields=fields,
-            supportsAllDrives=True,
-            driveId=DRIVE_ID,
-            corpora="drive",
-            includeItemsFromAllDrives=True,
-        )
-        .execute()
-    )
-
-    return results
-
-
-class SlideshowOperations:
-    """
-    Class for Asmbly TV slideshow operations. Methods for adding and removing volunteers
-    to the slideshow when they are actively on duty.
+    Class for Google Drive operations. Methods for creating, searching,
+    and copying files
     """
 
     def __init__(self, drive_service, volunteer_name):
         self.drive_service = drive_service
         self.volunteer_name = volunteer_name
-        self.slideshow_folder_id = get_folder_id("____LobbyTV").get("id")
-        self.volunteer_slides_folder_id = get_folder_id("Volunteer Slides").get("id")
+        self.drive_id = DRIVE_ID
+        self.template_sheet_id = TEMPLATE_SHEET_ID
+        self.parent_folder_id = PARENT_FOLDER_ID
+        self.slideshow_folder_id = self.get_folder_id("____LobbyTV").get("id")
+        self.volunteer_slides_folder_id = self.get_folder_id("Volunteer Slides").get(
+            "id"
+        )
 
     def add_volunteer_to_slideshow(self):
         """
@@ -192,18 +147,43 @@ class SlideshowOperations:
             supportsAllDrives=True,
         ).execute()
 
-class DriveOperations:
-    """
-    Class for Google Drive operations. Methods for creating, searching,
-    and copying files
-    """
+    def asmbly_drive_file_search(self, search_query):
+        """
+        Search Asmbly shared drive for files.
+        """
 
-    def __init__(self, drive_service, volunteer_name):
-        self.drive_service = drive_service
-        self.volunteer_name = volunteer_name
-        self.drive_id = DRIVE_ID
-        self.template_sheet_id = TEMPLATE_SHEET_ID
-        self.parent_folder_id = PARENT_FOLDER_ID
+        fields = "files(id, name, mimeType)"
+        results = (
+            self.drive_service.files()
+            .list(  # pylint: disable=maybe-no-member
+                q=search_query,
+                fields=fields,
+                supportsAllDrives=True,
+                driveId=self.drive_id,
+                corpora="drive",
+                includeItemsFromAllDrives=True,
+            )
+            .execute()
+        )
+
+        return results
+
+    def get_folder_id(self, folder_name):
+        """
+        Get folder ID from folder name.
+        """
+
+        search = f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}'"
+
+        items = self.asmbly_drive_file_search(search).get("files", [])
+
+        if len(items) == 0:
+            return {}
+
+        if len(items) > 1:
+            logging.error("More than one folder found with name '%s'", folder_name)
+
+        return items[0]
 
     def check_timesheet_exists(self):
         """
@@ -213,20 +193,12 @@ class DriveOperations:
             f'mimeType="application/vnd.google-apps.spreadsheet"'
             f' and "{self.parent_folder_id}" in parents'
             f' and name="ODV Timesheet - {self.volunteer_name}"'
-            f" and trashed = false"
+            f" and trashed=false"
         )
-        return (
-            self.drive_service.files()
-            .list(
-                q=search_query,
-                includeItemsFromAllDrives=True,
-                supportsAllDrives=True,
-                corpora="drive",
-                driveId=self.drive_id,
-            )
-            .execute()
-            .get("files")
-        )
+
+        result = self.asmbly_drive_file_search(search_query)
+
+        return result.get("files", [])
 
     def create_timesheet(self):
         """
@@ -245,6 +217,7 @@ class DriveOperations:
             .execute()
             .get("id")
         )
+
 
 class SheetsOperations:
     """
@@ -292,7 +265,9 @@ class SheetsOperations:
         Add clock-in entry to individual timesheet or master log.
         """
         self.sheet.values().append(
-            spreadsheetId=self.master_sheet_id if master else self.volunteer_timesheet_id,
+            spreadsheetId=self.master_sheet_id
+            if master
+            else self.volunteer_timesheet_id,
             range=f"'{self.volunteer_name}'!A3:B" if master else "Sheet1!A3:B",
             body={"values": [[log_entry[0], log_entry[1]]]},
             valueInputOption="USER_ENTERED",
@@ -302,18 +277,22 @@ class SheetsOperations:
         """
         Add clock-out entry to individual timesheet or master log.
         """
-        current_rows = (
-            self.sheet.values()
-            .get(
-                spreadsheetId=self.master_sheet_id
-                if master
-                else self.volunteer_timesheet_id,
-                range=f"'{self.volunteer_name}'!A1:B" if master else "Sheet1!A1:B",
-                majorDimension="ROWS",
+
+        def get_currents_rows():
+            return (
+                self.sheet.values()
+                .get(
+                    spreadsheetId=self.master_sheet_id
+                    if master
+                    else self.volunteer_timesheet_id,
+                    range=f"'{self.volunteer_name}'!A1:B" if master else "Sheet1!A1:B",
+                    majorDimension="ROWS",
+                )
+                .execute()
+                .get("values")
             )
-            .execute()
-            .get("values")
-        )
+
+        current_rows = get_currents_rows()
 
         last_row = len(current_rows)
 
@@ -354,13 +333,20 @@ class SheetsOperations:
             valueInputOption="USER_ENTERED",
         ).execute()
 
+    def get_all_sheets(self):
+        """
+        Get all sheets in the Master Log.
+        """
+        return (
+            self.sheet.get(spreadsheetId=self.master_sheet_id).execute().get("sheets")
+        )
+
     def check_master_log(self):
         """
         Check if a sheet already exsists in the Master Log for this volunteer.
         """
-        all_sheets = (
-            self.sheet.get(spreadsheetId=self.master_sheet_id).execute().get("sheets")
-        )
+
+        all_sheets = self.get_all_sheets()
 
         for sheet in all_sheets:
             if sheet.get("properties").get("title") == self.volunteer_name:
@@ -393,7 +379,6 @@ class SheetsOperations:
             new_sheet_id,
             self.volunteer_name,
         )
-
 
     def batch_update_copied_spreadsheet(
         self, file_id, copied_sheet_id, protected_range_id
@@ -517,7 +502,9 @@ class SheetsOperations:
                                             },
                                         },
                                         {
-                                            "userEnteredValue": {"stringValue": "Time In"},
+                                            "userEnteredValue": {
+                                                "stringValue": "Time In"
+                                            },
                                             "userEnteredFormat": {
                                                 "backgroundColor": {
                                                     "red": 0.635,
@@ -527,7 +514,9 @@ class SheetsOperations:
                                             },
                                         },
                                         {
-                                            "userEnteredValue": {"stringValue": "Time Out"},
+                                            "userEnteredValue": {
+                                                "stringValue": "Time Out"
+                                            },
                                             "userEnteredFormat": {
                                                 "backgroundColor": {
                                                     "red": 0.635,
@@ -537,7 +526,9 @@ class SheetsOperations:
                                             },
                                         },
                                         {
-                                            "userEnteredValue": {"stringValue": "Hours"},
+                                            "userEnteredValue": {
+                                                "stringValue": "Hours"
+                                            },
                                             "userEnteredFormat": {
                                                 "backgroundColor": {
                                                     "red": 0.635,

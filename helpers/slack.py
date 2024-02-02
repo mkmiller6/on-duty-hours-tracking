@@ -6,21 +6,17 @@ import os
 import logging
 import requests
 
-if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') is not None:
-    from credentials import (
-        SLACK_WEBHOOK_URL,
-        SLACK_TOKEN
-    )
+if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
+    from credentials import SLACK_WEBHOOK_URL, SLACK_TOKEN
 else:
-    from config import (
-        SLACK_WEBHOOK_URL,
-        SLACK_TOKEN
-    )
+    from config import SLACK_WEBHOOK_URL, SLACK_TOKEN
+
 
 class SlackOps:
     """
     Operations related to Slack. Get Slack user ID from full name. Send Slack messages.
     """
+
     def __init__(self, user_email, full_name):
         self.webhook_url = SLACK_WEBHOOK_URL
         self.token = SLACK_TOKEN
@@ -38,8 +34,8 @@ class SlackOps:
             url,
             params=params,
             headers={"Authorization": "Bearer " + self.token},
-            timeout=10
-            )
+            timeout=10,
+        )
 
         if response.status_code != 200:
             logging.error("Get %s returned status code %s", url, response.status_code)
@@ -51,10 +47,9 @@ class SlackOps:
             logging.error("Get %s returned error: %s", url, response.get("error"))
             return None
 
-
         user = filter(
             lambda user: user.get("profile").get("real_name") == self.full_name,
-            response["members"]
+            response["members"],
         )
 
         found_user = list(user)
@@ -68,8 +63,8 @@ class SlackOps:
             url,
             params=params,
             headers={"Authorization": "Bearer " + self.token},
-            timeout=10
-            )
+            timeout=10,
+        )
 
         if response.status_code != 200:
             logging.error("Get %s returned status code %s", url, response.status_code)
@@ -81,7 +76,6 @@ class SlackOps:
             return None
 
         return response.get("user").get("id")
-
 
     def clock_in_slack_message(self, slack_id):
         """
@@ -98,15 +92,13 @@ class SlackOps:
                                 "elements": [
                                     {
                                         "type:": "text",
-                                        "text": f"{self.full_name}",
-                                        "style": {
-                                            "bold": True
-                                        }
+                                        "text": self.full_name,
+                                        "style": {"bold": True},
                                     },
                                     {
                                         "type": "text",
                                         "text": " is now on duty.",
-                                    }
+                                    },
                                 ],
                             }
                         ],
@@ -129,19 +121,20 @@ class SlackOps:
                                     {
                                         "type": "text",
                                         "text": " is now on duty.",
-                                    }
-                                ]
+                                    },
+                                ],
                             },
-                        ]
+                        ],
                     },
                 ]
             }
 
-        requests.post(self.webhook_url,
-                      json=slack_event_payload,
-                      headers={"Content-Type": "application/json"},
-                      timeout=10
-                      )
+        requests.post(
+            self.webhook_url,
+            json=slack_event_payload,
+            headers={"Content-Type": "application/json"},
+            timeout=10,
+        )
 
         return slack_event_payload
 
@@ -160,15 +153,13 @@ class SlackOps:
                                 "elements": [
                                     {
                                         "type:": "text",
-                                        "text": f"{self.full_name}",
-                                        "style": {
-                                            "bold": True
-                                        }
+                                        "text": self.full_name,
+                                        "style": {"bold": True},
                                     },
                                     {
                                         "type": "text",
                                         "text": " is now off duty.",
-                                    }
+                                    },
                                 ],
                             }
                         ],
@@ -191,19 +182,19 @@ class SlackOps:
                                     {
                                         "type": "text",
                                         "text": " is now off duty.",
-                                    }
-                                ]
+                                    },
+                                ],
                             },
-                        ]
+                        ],
                     },
                 ]
             }
 
-        requests.post(self.webhook_url,
-                      json=slack_event_payload,
-                      headers={"Content-Type": "application/json"},
-                      timeout=10
-                      )
+        requests.post(
+            self.webhook_url,
+            json=slack_event_payload,
+            headers={"Content-Type": "application/json"},
+            timeout=10,
+        )
 
         return slack_event_payload
-    
