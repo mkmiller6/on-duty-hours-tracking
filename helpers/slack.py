@@ -28,12 +28,14 @@ class SlackOps:
         Get Slack user ID by full name. If not found, try to lookup by Openpath email.
         If not found, return None. Allows mentioning user in Slack messages.
         """
+        session = requests.Session()
+        session.headers.update({"Authorization": f"Bearer {self.token}"})
+
         url = "https://slack.com/api/users.list"
         params = {"limit": 300}
-        response = requests.get(
-            url,
+        response = session.get(
+            url=url,
             params=params,
-            headers={"Authorization": "Bearer " + self.token},
             timeout=10,
         )
 
@@ -47,22 +49,17 @@ class SlackOps:
             logging.error("Get %s returned error: %s", url, response.get("error"))
             return None
 
-        user = filter(
-            lambda user: user.get("profile").get("real_name") == self.full_name,
-            response["members"],
-        )
-
-        found_user = list(user)
-
-        if len(found_user) > 0:
-            return found_user[0].get("id")
+        if any(
+            (user := member).get("profile").get("real_name") == self.full_name
+            for member in response["members"]
+        ):
+            return user.get("id")
 
         url = "https://slack.com/api/users.lookupByEmail"
         params = {"email": self.user_email}
-        response = requests.get(
-            url,
+        response = session.get(
+            url=url,
             params=params,
-            headers={"Authorization": "Bearer " + self.token},
             timeout=10,
         )
 
