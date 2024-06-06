@@ -100,7 +100,7 @@ def handler(event, _):
         # range protection, duration format, etc.
         sheets_ops.initialize_copied_template()
 
-    if op_event.entry == "Clock In":
+    if op_event.entry == "OnDuty Check In":
         # Append clock-in time to user's log sheet
         sheets_ops.add_clock_in_entry_to_timesheet((op_event.date, op_event.time))
 
@@ -129,7 +129,7 @@ def handler(event, _):
         # If user_id is None, the message will just contain the volunteer's bolded name.
         slack_user.clock_in_slack_message(user_id)
 
-    elif op_event.entry == "Clock Out":
+    elif op_event.entry == "OnDuty Check Out":
         # Update the user's log sheet with the clock-out time
         sheets_ops.add_clock_out_entry_to_timesheet(op_event.time)
 
