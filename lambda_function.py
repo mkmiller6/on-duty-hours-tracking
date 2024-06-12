@@ -64,17 +64,20 @@ def handler(event, _):
             "statusCode": 400,
         }
 
-    creds = get_access_token(priv_sa, SCOPES)
-
-    # Create the API services using built credential tokens
-    drive_service = build("drive", "v3", credentials=creds)
-    sheets_service = build("sheets", "v4", credentials=creds)
-
     op_event = OpenpathEvent(
         op_event.get("entryId"),
         int(op_event.get("userId")),
         int(op_event.get("timestamp")),
     )
+
+    if op_event.entry not in ["OnDuty Check In", "OnDuty Check Out"]:
+        return {"statusCode": 400, "message": "incorrect entry"}
+
+    creds = get_access_token(priv_sa, SCOPES)
+
+    # Create the API services using built credential tokens
+    drive_service = build("drive", "v3", credentials=creds)
+    sheets_service = build("sheets", "v4", credentials=creds)
 
     op_user = OpenpathUser(op_event.user_id)
 
