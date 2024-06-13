@@ -12,16 +12,17 @@ from botocore.exceptions import ClientError
 ENCRYPTED_OP_APIKEY = os.environ["O_APIkey"]
 ENCRYPTED_OP_APIUSER = os.environ["O_APIuser"]
 
-ENCRYPTED_MASTER_LOG_SPREADSHEET_ID = os.environ["MASTER_LOG_SPREADSHEET_ID"]
-ENCRYPTED_TEMPLATE_SHEET_ID = os.environ["TEMPLATE_SHEET_ID"]
-ENCRYPTED_PARENT_FOLDER_ID = os.environ["PARENT_FOLDER_ID"]
-ENCRYPTED_ON_DUTY_DRIVE_ID = os.environ["ON_DUTY_DRIVE_ID"]
-ENCRYPTED_MAIN_DRIVE_ID = os.environ["MAIN_DRIVE_ID"]
+MASTER_LOG_SPREADSHEET_ID = os.environ["MASTER_LOG_SPREADSHEET_ID"]
+TEMPLATE_SHEET_ID = os.environ["TEMPLATE_SHEET_ID"]
+PARENT_FOLDER_ID = os.environ["PARENT_FOLDER_ID"]
+ON_DUTY_DRIVE_ID = os.environ["ON_DUTY_DRIVE_ID"]
+MAIN_DRIVE_ID = os.environ["MAIN_DRIVE_ID"]
 
-ENCRYPTED_SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
+SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 ENCRYPTED_SLACK_TOKEN = os.environ["SLACK_TOKEN"]
+SLACK_ON_DUTY_CHANNEL_ID = os.environ["SLACK_ON_DUTY_CHANNEL_ID"]
 
-ENCRYPTED_PRIV_SA = os.environ["PRIV_SA"]
+PRIV_SA = os.environ["PRIV_SA"]
 ENCRYPTED_INTERNAL_API_KEY = os.environ["INTERNAL_API_KEY"]
 
 CLOCK_IN_ENTRY_NAME = os.environ["CLOCK_IN_ENTRY_NAME"]
@@ -74,61 +75,6 @@ O_APIuser = (
     .decode("utf-8")
 )
 
-MASTER_LOG_SPREADSHEET_ID = (
-    boto3.client("kms")
-    .decrypt(
-        CiphertextBlob=b64decode(ENCRYPTED_MASTER_LOG_SPREADSHEET_ID),
-        EncryptionContext={
-            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        },
-    )["Plaintext"]
-    .decode("utf-8")
-)
-
-TEMPLATE_SHEET_ID = (
-    boto3.client("kms")
-    .decrypt(
-        CiphertextBlob=b64decode(ENCRYPTED_TEMPLATE_SHEET_ID),
-        EncryptionContext={
-            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        },
-    )["Plaintext"]
-    .decode("utf-8")
-)
-
-PARENT_FOLDER_ID = (
-    boto3.client("kms")
-    .decrypt(
-        CiphertextBlob=b64decode(ENCRYPTED_PARENT_FOLDER_ID),
-        EncryptionContext={
-            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        },
-    )["Plaintext"]
-    .decode("utf-8")
-)
-
-ON_DUTY_DRIVE_ID = (
-    boto3.client("kms")
-    .decrypt(
-        CiphertextBlob=b64decode(ENCRYPTED_ON_DUTY_DRIVE_ID),
-        EncryptionContext={
-            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        },
-    )["Plaintext"]
-    .decode("utf-8")
-)
-
-MAIN_DRIVE_ID = (
-    boto3.client("kms")
-    .decrypt(
-        CiphertextBlob=b64decode(ENCRYPTED_MAIN_DRIVE_ID),
-        EncryptionContext={
-            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        },
-    )["Plaintext"]
-    .decode("utf-8")
-)
-
 INTERNAL_API_KEY = (
     boto3.client("kms")
     .decrypt(
@@ -140,32 +86,10 @@ INTERNAL_API_KEY = (
     .decode("utf-8")
 )
 
-SLACK_WEBHOOK_URL = (
-    boto3.client("kms")
-    .decrypt(
-        CiphertextBlob=b64decode(ENCRYPTED_SLACK_WEBHOOK_URL),
-        EncryptionContext={
-            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        },
-    )["Plaintext"]
-    .decode("utf-8")
-)
-
 SLACK_TOKEN = (
     boto3.client("kms")
     .decrypt(
         CiphertextBlob=b64decode(ENCRYPTED_SLACK_TOKEN),
-        EncryptionContext={
-            "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
-        },
-    )["Plaintext"]
-    .decode("utf-8")
-)
-
-priv_sa = (
-    boto3.client("kms")
-    .decrypt(
-        CiphertextBlob=b64decode(ENCRYPTED_PRIV_SA),
         EncryptionContext={
             "LambdaFunctionName": os.environ["AWS_LAMBDA_FUNCTION_NAME"]
         },

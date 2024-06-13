@@ -10,17 +10,17 @@ from helpers.slack import SlackOps
 
 @pytest.fixture
 def user_with_email():
-    return SlackOps("nicovaulter6@gmail.com", "Nick Maskal")
+    return SlackOps("nicovaulter6@gmail.com", "Nick", "Maskal")
 
 
 @pytest.fixture
 def no_user():
-    return SlackOps("oshofmann@gmail.com", "Owen Hofmann")
+    return SlackOps("oshofmann@gmail.com", "Owen", "Hofmann")
 
 
 @pytest.fixture
 def email_only_user():
-    return SlackOps("matthew.miller@asmbly.org", "")
+    return SlackOps("matthew.miller@asmbly.org", "", "")
 
 
 def test_get_slack_user_id(user_with_email: SlackOps):

@@ -87,7 +87,7 @@ def handler(event, _):
 
     drive_ops = DriveOperations(drive_service, op_user.full_name)
 
-    slack_user = SlackOps(op_user.email, op_user.full_name)
+    slack_user = SlackOps(op_user.email, op_user.first_name, op_user.last_name)
 
     logging.info("Volunteer: %s", op_user.full_name)
 
