@@ -1,6 +1,7 @@
 """
 Helper functions for interacting with Google Discovery APIs.
 """
+
 import os
 import logging
 
@@ -12,7 +13,8 @@ if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import (
         key_file,
         priv_sa,
-        DRIVE_ID,
+        ON_DUTY_DRIVE_ID,
+        MAIN_DRIVE_ID,
         MASTER_LOG_SPREADSHEET_ID,
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
@@ -21,7 +23,8 @@ else:
     from config import (
         key_file,
         priv_sa,
-        DRIVE_ID,
+        ON_DUTY_DRIVE_ID,
+        MAIN_DRIVE_ID,
         MASTER_LOG_SPREADSHEET_ID,
         TEMPLATE_SHEET_ID,
         PARENT_FOLDER_ID,
@@ -61,13 +64,16 @@ class DriveOperations:
     def __init__(self, drive_service, volunteer_name):
         self.drive_service = drive_service
         self.volunteer_name = volunteer_name
-        self.drive_id = DRIVE_ID
+        self.on_duty_drive_id = ON_DUTY_DRIVE_ID
+        self.main_drive_id = MAIN_DRIVE_ID
         self.template_sheet_id = TEMPLATE_SHEET_ID
         self.parent_folder_id = PARENT_FOLDER_ID
-        self.slideshow_folder_id = self.get_folder_id("____LobbyTV").get("id")
-        self.volunteer_slides_folder_id = self.get_folder_id("Volunteer Slides").get(
+        self.slideshow_folder_id = self.get_folder_id(MAIN_DRIVE_ID, "____LobbyTV").get(
             "id"
         )
+        self.volunteer_slides_folder_id = self.get_folder_id(
+            ON_DUTY_DRIVE_ID, "Volunteer Slides"
+        ).get("id")
 
     def add_volunteer_to_slideshow(self):
         """
@@ -78,7 +84,7 @@ class DriveOperations:
             return
 
         volunteer_slide = self.slide_search(
-            self.volunteer_name, self.volunteer_slides_folder_id
+            self.on_duty_drive_id, self.volunteer_name, self.volunteer_slides_folder_id
         )
 
         if len(volunteer_slide.get("files")) > 0:
@@ -97,7 +103,7 @@ class DriveOperations:
             return
 
         volunteer_slide = self.slide_search(
-            self.volunteer_name, self.slideshow_folder_id
+            self.main_drive_id, self.volunteer_name, self.slideshow_folder_id
         )
 
         if len(volunteer_slide.get("files")) > 0:
@@ -105,7 +111,7 @@ class DriveOperations:
 
             self.trash_slide(slide_file_id)
 
-    def slide_search(self, volunteer_name: str, folder_id: str):
+    def slide_search(self, drive_id: str, volunteer_name: str, folder_id: str):
         """
         Search for a file.
         """
@@ -113,13 +119,13 @@ class DriveOperations:
             self.drive_service.files()
             .list(
                 q=f"""
-                trashed=false and name="{volunteer_name}"
+                trashed=false and name="ODV - {volunteer_name}.png"
                 and "{folder_id}" in parents
             """,
                 includeItemsFromAllDrives=True,
                 supportsAllDrives=True,
                 corpora="drive",
-                driveId=DRIVE_ID,
+                driveId=drive_id,
             )
             .execute()
         )
@@ -147,7 +153,7 @@ class DriveOperations:
             supportsAllDrives=True,
         ).execute()
 
-    def asmbly_drive_file_search(self, search_query):
+    def asmbly_drive_file_search(self, drive_id, search_query):
         """
         Search Asmbly shared drive for files.
         """
@@ -159,7 +165,7 @@ class DriveOperations:
                 q=search_query,
                 fields=fields,
                 supportsAllDrives=True,
-                driveId=self.drive_id,
+                driveId=drive_id,
                 corpora="drive",
                 includeItemsFromAllDrives=True,
             )
@@ -168,14 +174,14 @@ class DriveOperations:
 
         return results
 
-    def get_folder_id(self, folder_name):
+    def get_folder_id(self, drive_id, folder_name):
         """
         Get folder ID from folder name.
         """
 
         search = f"mimeType = 'application/vnd.google-apps.folder' and name = '{folder_name}'"
 
-        items = self.asmbly_drive_file_search(search).get("files", [])
+        items = self.asmbly_drive_file_search(drive_id, search).get("files", [])
 
         if len(items) == 0:
             return {}
@@ -196,7 +202,7 @@ class DriveOperations:
             f" and trashed=false"
         )
 
-        result = self.asmbly_drive_file_search(search_query)
+        result = self.asmbly_drive_file_search(self.on_duty_drive_id, search_query)
 
         return result.get("files", [])
 
@@ -265,9 +271,9 @@ class SheetsOperations:
         Add clock-in entry to individual timesheet or master log.
         """
         self.sheet.values().append(
-            spreadsheetId=self.master_sheet_id
-            if master
-            else self.volunteer_timesheet_id,
+            spreadsheetId=(
+                self.master_sheet_id if master else self.volunteer_timesheet_id
+            ),
             range=f"'{self.volunteer_name}'!A3:B" if master else "Sheet1!A3:B",
             body={"values": [[log_entry[0], log_entry[1]]]},
             valueInputOption="USER_ENTERED",
@@ -282,9 +288,9 @@ class SheetsOperations:
             return (
                 self.sheet.values()
                 .get(
-                    spreadsheetId=self.master_sheet_id
-                    if master
-                    else self.volunteer_timesheet_id,
+                    spreadsheetId=(
+                        self.master_sheet_id if master else self.volunteer_timesheet_id
+                    ),
                     range=f"'{self.volunteer_name}'!A1:B" if master else "Sheet1!A1:B",
                     majorDimension="ROWS",
                 )

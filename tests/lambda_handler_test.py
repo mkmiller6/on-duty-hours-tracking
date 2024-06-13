@@ -7,7 +7,7 @@ import pytest
 from pytest_mock import MockerFixture
 from lambda_function import handler
 
-from config import INTERNAL_API_KEY
+from config import INTERNAL_API_KEY, CLOCK_IN_ENTRY_NAME, CLOCK_OUT_ENTRY_NAME
 
 
 @pytest.fixture(autouse=True)
@@ -19,7 +19,7 @@ def mock_base_function_calls(mocker: MockerFixture):
 @pytest.fixture
 def mock_clock_in_event_with_valid_key(mocker: MockerFixture):
     event = {
-        "entryId": "Clock In",
+        "entryId": CLOCK_IN_ENTRY_NAME,
         "timestamp": 1706630094,
         "userId": 13804489,
         "apiKey": INTERNAL_API_KEY,
@@ -33,7 +33,7 @@ def mock_clock_in_event_with_valid_key(mocker: MockerFixture):
 @pytest.fixture
 def mock_clock_in_event_with_invalid_key():
     event = {
-        "entryId": "Clock In",
+        "entryId": CLOCK_IN_ENTRY_NAME,
         "timestamp": 1706630094,
         "userId": 13804489,
         "apiKey": "asfkl;jas",
@@ -58,7 +58,7 @@ def mock_clock_in_event_valid_key_datetimes(mock_clock_in_event_with_valid_key):
 @pytest.fixture
 def mock_clock_out_event_with_valid_key(mocker: MockerFixture):
     event = {
-        "entryId": "Clock Out",
+        "entryId": CLOCK_OUT_ENTRY_NAME,
         "timestamp": 1706630094,
         "userId": 13804489,
         "apiKey": INTERNAL_API_KEY,
@@ -85,7 +85,7 @@ def mock_clock_out_event_valid_key_datetimes(mock_clock_out_event_with_valid_key
 @pytest.fixture
 def mock_clock_out_event_with_invalid_key():
     event = {
-        "entryId": "Clock Out",
+        "entryId": CLOCK_OUT_ENTRY_NAME,
         "timestamp": 1706630094,
         "userId": 13804489,
         "apiKey": "asfkl;jas",
@@ -165,7 +165,7 @@ def test_handler_clock_in_valid_key_existing_volunteer_master_sheet_exsists_slac
     result = handler(mock_clock_in_event_with_valid_key, None)
 
     assert (
-        "Parsed event: {'entryId': 'Clock In', 'timestamp': 1706630094, 'userId': 13804489}"
+        f"Parsed event: {{'entryId': '{CLOCK_IN_ENTRY_NAME}', 'timestamp': 1706630094, 'userId': 13804489}}"
         in caplog.text
     )
     assert "apiKey" not in caplog.text
@@ -241,7 +241,7 @@ def test_handler_clock_in_valid_key_existing_volunteer_master_sheet_exsists_slac
     result = handler(mock_clock_in_event_with_valid_key, None)
 
     assert (
-        "Parsed event: {'entryId': 'Clock In', 'timestamp': 1706630094, 'userId': 13804489}"
+        f"Parsed event: {{'entryId': '{CLOCK_IN_ENTRY_NAME}', 'timestamp': 1706630094, 'userId': 13804489}}"
         in caplog.text
     )
     assert "apiKey" not in caplog.text
@@ -316,7 +316,7 @@ def test_handler_clock_in_valid_key_existing_volunteer_master_sheet_not_exsists_
     result = handler(mock_clock_in_event_with_valid_key, None)
 
     assert (
-        "Parsed event: {'entryId': 'Clock In', 'timestamp': 1706630094, 'userId': 13804489}"
+        f"Parsed event: {{'entryId': '{CLOCK_IN_ENTRY_NAME}', 'timestamp': 1706630094, 'userId': 13804489}}"
         in caplog.text
     )
     assert "apiKey" not in caplog.text
@@ -384,7 +384,7 @@ def test_handler_clock_in_valid_key_new_volunteer_master_sheet_not_exsists_slack
     result = handler(mock_clock_in_event_with_valid_key, None)
 
     assert (
-        "Parsed event: {'entryId': 'Clock In', 'timestamp': 1706630094, 'userId': 13804489}"
+        f"Parsed event: {{'entryId': '{CLOCK_IN_ENTRY_NAME}', 'timestamp': 1706630094, 'userId': 13804489}}"
         in caplog.text
     )
     assert "apiKey" not in caplog.text
@@ -458,7 +458,7 @@ def test_handler_clock_out_valid_key_existing_volunteer_master_sheet_exsists_sla
     result = handler(mock_clock_out_event_with_valid_key, None)
 
     assert (
-        "Parsed event: {'entryId': 'Clock Out', 'timestamp': 1706630094, 'userId': 13804489}"
+        f"Parsed event: {{'entryId': '{CLOCK_OUT_ENTRY_NAME}', 'timestamp': 1706630094, 'userId': 13804489}}"
         in caplog.text
     )
     assert "apiKey" not in caplog.text

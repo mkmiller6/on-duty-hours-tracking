@@ -171,6 +171,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_both_folders.add_volunteer_to_slideshow()
 
         slideshow_operations_with_both_folders.slide_search.assert_called_once_with(
+            slideshow_operations_with_both_folders.on_duty_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_both_folders.volunteer_slides_folder_id,
         )
@@ -197,6 +198,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_both_folders.add_volunteer_to_slideshow()
 
         slideshow_operations_with_both_folders.slide_search.assert_called_once_with(
+            slideshow_operations_with_both_folders.on_duty_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_both_folders.volunteer_slides_folder_id,
         )
@@ -241,6 +243,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_volunteer_folder.add_volunteer_to_slideshow()
 
         slideshow_operations_with_volunteer_folder.slide_search.assert_called_once_with(
+            slideshow_operations_with_volunteer_folder.on_duty_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_volunteer_folder.volunteer_slides_folder_id,
         )
@@ -270,6 +273,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_volunteer_folder.add_volunteer_to_slideshow()
 
         slideshow_operations_with_volunteer_folder.slide_search.assert_called_once_with(
+            slideshow_operations_with_volunteer_folder.on_duty_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_volunteer_folder.volunteer_slides_folder_id,
         )
@@ -298,6 +302,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_both_folders.remove_volunteer_from_slideshow()
 
         slideshow_operations_with_both_folders.slide_search.assert_called_once_with(
+            slideshow_operations_with_both_folders.main_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_both_folders.slideshow_folder_id,
         )
@@ -323,6 +328,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_both_folders.remove_volunteer_from_slideshow()
 
         slideshow_operations_with_both_folders.slide_search.assert_called_once_with(
+            slideshow_operations_with_both_folders.main_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_both_folders.slideshow_folder_id,
         )
@@ -365,6 +371,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_slideshow_folder.remove_volunteer_from_slideshow()
 
         slideshow_operations_with_slideshow_folder.slide_search.assert_called_once_with(
+            slideshow_operations_with_slideshow_folder.main_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_slideshow_folder.slideshow_folder_id,
         )
@@ -390,6 +397,7 @@ class TestSlideshowOperations:
         slideshow_operations_with_slideshow_folder.remove_volunteer_from_slideshow()
 
         slideshow_operations_with_slideshow_folder.slide_search.assert_called_once_with(
+            slideshow_operations_with_slideshow_folder.main_drive_id,
             "Test Volunteer Name",
             slideshow_operations_with_slideshow_folder.slideshow_folder_id,
         )

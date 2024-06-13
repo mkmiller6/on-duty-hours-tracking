@@ -5,7 +5,7 @@ from pytest_mock import MockerFixture
 
 from helpers.google_services import DriveOperations
 
-from config import DRIVE_ID, PARENT_FOLDER_ID, TEMPLATE_SHEET_ID
+from config import ON_DUTY_DRIVE_ID, MAIN_DRIVE_ID, PARENT_FOLDER_ID, TEMPLATE_SHEET_ID
 
 
 class TestDriveOperations:
@@ -31,7 +31,8 @@ class TestDriveOperations:
 
         mock_instance = DriveOperations(mocker.Mock(), "Test Volunteer Name")
 
-        assert mock_instance.drive_id == DRIVE_ID
+        assert mock_instance.on_duty_drive_id == ON_DUTY_DRIVE_ID
+        assert mock_instance.main_drive_id == MAIN_DRIVE_ID
         assert mock_instance.parent_folder_id == PARENT_FOLDER_ID
         assert mock_instance.template_sheet_id == TEMPLATE_SHEET_ID
         assert mock_instance.volunteer_name == "Test Volunteer Name"
@@ -51,14 +52,17 @@ class TestDriveOperations:
 
         mock_drive_instance = DriveOperations(mocker.Mock(), "Test Volunteer Name")
 
-        assert mock_drive_instance.get_folder_id("On Duty Timesheets") == {
+        assert mock_drive_instance.get_folder_id(
+            mock_drive_instance.on_duty_drive_id, "On Duty Timesheets"
+        ) == {
             "id": "123",
             "name": "On Duty Timesheets",
             "mimeType": "application/vnd.google-apps.folder",
         }
 
         mock_drive_instance.asmbly_drive_file_search.assert_called_with(
-            "mimeType = 'application/vnd.google-apps.folder' and name = 'On Duty Timesheets'"
+            mock_drive_instance.on_duty_drive_id,
+            "mimeType = 'application/vnd.google-apps.folder' and name = 'On Duty Timesheets'",
         )
 
     def test_get_folder_id_no_file(self, mocker: MockerFixture):
@@ -68,10 +72,16 @@ class TestDriveOperations:
 
         mock_drive_instance = DriveOperations(mocker.Mock(), "Test Volunteer Name")
 
-        assert mock_drive_instance.get_folder_id("On Duty Timesheets") == {}
+        assert (
+            mock_drive_instance.get_folder_id(
+                mock_drive_instance.on_duty_drive_id, "On Duty Timesheets"
+            )
+            == {}
+        )
 
         mock_drive_instance.asmbly_drive_file_search.assert_called_with(
-            "mimeType = 'application/vnd.google-apps.folder' and name = 'On Duty Timesheets'"
+            mock_drive_instance.on_duty_drive_id,
+            "mimeType = 'application/vnd.google-apps.folder' and name = 'On Duty Timesheets'",
         )
 
     def test_get_folder_id_multiple_files(self, mocker: MockerFixture, caplog):
@@ -94,14 +104,17 @@ class TestDriveOperations:
 
         mock_drive_instance = DriveOperations(mocker.Mock(), "Test Volunteer Name")
 
-        assert mock_drive_instance.get_folder_id("On Duty Timesheets") == {
+        assert mock_drive_instance.get_folder_id(
+            mock_drive_instance.on_duty_drive_id, "On Duty Timesheets"
+        ) == {
             "id": "123",
             "name": "On Duty Timesheets",
             "mimeType": "application/vnd.google-apps.folder",
         }
 
         mock_drive_instance.asmbly_drive_file_search.assert_called_with(
-            "mimeType = 'application/vnd.google-apps.folder' and name = 'On Duty Timesheets'"
+            mock_drive_instance.on_duty_drive_id,
+            "mimeType = 'application/vnd.google-apps.folder' and name = 'On Duty Timesheets'",
         )
 
         assert (
@@ -126,10 +139,11 @@ class TestDriveOperations:
         mock_instance.check_timesheet_exists()
 
         mock_instance.asmbly_drive_file_search.assert_called_with(
+            mock_instance.on_duty_drive_id,
             'mimeType="application/vnd.google-apps.spreadsheet"'
             f' and "{mock_instance.parent_folder_id}" in parents'
             f' and name="ODV Timesheet - {mock_instance.volunteer_name}"'
-            " and trashed=false"
+            " and trashed=false",
         )
 
     def test_create_timesheet(self, mock_folders, mocker: MockerFixture):

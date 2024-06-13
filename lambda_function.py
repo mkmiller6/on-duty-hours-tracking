@@ -21,11 +21,15 @@ if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import (
         priv_sa,
         INTERNAL_API_KEY,
+        CLOCK_OUT_ENTRY_NAME,
+        CLOCK_IN_ENTRY_NAME,
     )
 else:
     from config import (
         priv_sa,
         INTERNAL_API_KEY,
+        CLOCK_OUT_ENTRY_NAME,
+        CLOCK_IN_ENTRY_NAME,
     )
 
 # Suppress disovery cache warnings
@@ -70,7 +74,7 @@ def handler(event, _):
         int(op_event.get("timestamp")),
     )
 
-    if op_event.entry not in ["OnDuty Check In", "OnDuty Check Out"]:
+    if op_event.entry not in [CLOCK_IN_ENTRY_NAME, CLOCK_OUT_ENTRY_NAME]:
         return {"statusCode": 400, "message": "incorrect entry"}
 
     creds = get_access_token(priv_sa, SCOPES)
@@ -103,7 +107,7 @@ def handler(event, _):
         # range protection, duration format, etc.
         sheets_ops.initialize_copied_template()
 
-    if op_event.entry == "OnDuty Check In":
+    if op_event.entry == CLOCK_IN_ENTRY_NAME:
         # Append clock-in time to user's log sheet
         sheets_ops.add_clock_in_entry_to_timesheet((op_event.date, op_event.time))
 
@@ -132,7 +136,7 @@ def handler(event, _):
         # If user_id is None, the message will just contain the volunteer's bolded name.
         slack_user.clock_in_slack_message(user_id)
 
-    elif op_event.entry == "OnDuty Check Out":
+    elif op_event.entry == CLOCK_OUT_ENTRY_NAME:
         # Update the user's log sheet with the clock-out time
         sheets_ops.add_clock_out_entry_to_timesheet(op_event.time)
 
