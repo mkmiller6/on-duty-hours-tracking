@@ -19,14 +19,14 @@ from helpers.google_services import (
 
 if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import (
-        priv_sa,
+        PRIV_SA,
         INTERNAL_API_KEY,
         CLOCK_OUT_ENTRY_NAME,
         CLOCK_IN_ENTRY_NAME,
     )
 else:
     from config import (
-        priv_sa,
+        PRIV_SA,
         INTERNAL_API_KEY,
         CLOCK_OUT_ENTRY_NAME,
         CLOCK_IN_ENTRY_NAME,
@@ -77,7 +77,7 @@ def handler(event, _):
     if op_event.entry not in [CLOCK_IN_ENTRY_NAME, CLOCK_OUT_ENTRY_NAME]:
         return {"statusCode": 400, "message": "incorrect entry"}
 
-    creds = get_access_token(priv_sa, SCOPES)
+    creds = get_access_token(PRIV_SA, SCOPES)
 
     # Create the API services using built credential tokens
     drive_service = build("drive", "v3", credentials=creds)

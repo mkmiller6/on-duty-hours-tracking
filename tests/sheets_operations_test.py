@@ -5,7 +5,7 @@ from pytest_mock import MockerFixture
 
 from helpers.google_services import SheetsOperations
 
-from config import MASTER_LOG_SPREADSHEET_ID, priv_sa
+from config import MASTER_LOG_SPREADSHEET_ID, PRIV_SA
 
 
 class TestSheetsOperations:
@@ -49,7 +49,7 @@ class TestSheetsOperations:
                             },
                             "description": "On-Duty Hours",
                             "warningOnly": False,
-                            "editors": {"users": [priv_sa]},
+                            "editors": {"users": [PRIV_SA]},
                         }
                     ],
                 }

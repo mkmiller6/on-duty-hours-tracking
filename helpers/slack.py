@@ -171,7 +171,7 @@ class SlackOps:
             elements = [
                 {
                     "type:": "text",
-                    "text": self.first_name + self.last_name,
+                    "text": self.first_name + " " + self.last_name,
                     "style": {"bold": True},
                 },
                 {
@@ -211,7 +211,7 @@ class SlackOps:
             elements = [
                 {
                     "type:": "text",
-                    "text": self.first_name + self.last_name,
+                    "text": self.first_name + " " + self.last_name,
                     "style": {"bold": True},
                 },
                 {
