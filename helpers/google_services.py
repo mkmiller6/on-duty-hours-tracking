@@ -12,7 +12,7 @@ import google.auth.transport.requests
 if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
     from credentials import (
         key_file,
-        priv_sa,
+        PRIV_SA,
         ON_DUTY_DRIVE_ID,
         MAIN_DRIVE_ID,
         MASTER_LOG_SPREADSHEET_ID,
@@ -22,7 +22,7 @@ if os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is not None:
 else:
     from config import (
         key_file,
-        priv_sa,
+        PRIV_SA,
         ON_DUTY_DRIVE_ID,
         MAIN_DRIVE_ID,
         MASTER_LOG_SPREADSHEET_ID,
@@ -409,7 +409,7 @@ class SheetsOperations:
                                 "description": "On-Duty Hours",
                                 "warningOnly": False,
                                 "editors": {
-                                    "users": ["admin@asmbly.org", priv_sa],
+                                    "users": ["admin@asmbly.org", PRIV_SA],
                                     "groups": [
                                         "membership@asmbly.org",
                                         "leadership@asmbly.org",
@@ -591,7 +591,7 @@ class SheetsOperations:
                                 "editors": {
                                     "users": [
                                         "admin@asmbly.org",
-                                        priv_sa,
+                                        PRIV_SA,
                                     ],
                                     "groups": [
                                         "membership@asmbly.org",
