@@ -6,6 +6,7 @@ attached to the Openpath cabinet at Asmbly.
 import logging
 import os
 import json
+import datetime
 
 from googleapiclient.discovery import build
 
@@ -108,6 +109,14 @@ def handler(event, _):
         sheets_ops.initialize_copied_template()
 
     if op_event.entry == CLOCK_IN_ENTRY_NAME:
+        # Check if most recent entry is wthin the last 2 minutes. If so, return.
+        most_recent_entry = sheets_ops.get_last_entry_datetime(clock_in=True)
+
+        if most_recent_entry is not None and (
+            most_recent_entry > datetime.datetime.now() - datetime.timedelta(minutes=3)
+        ):
+            return {"statusCode": 200}
+
         # Append clock-in time to user's log sheet
         sheets_ops.add_clock_in_entry_to_timesheet((op_event.date, op_event.time))
 
@@ -137,6 +146,14 @@ def handler(event, _):
         slack_user.clock_in_slack_message(user_id)
 
     elif op_event.entry == CLOCK_OUT_ENTRY_NAME:
+        # Check if most recent entry is wthin the last 2 minutes. If so, return.
+        most_recent_entry = sheets_ops.get_last_entry_datetime(clock_in=False)
+
+        if most_recent_entry is not None and (
+            most_recent_entry > datetime.datetime.now() - datetime.timedelta(minutes=3)
+        ):
+            return {"statusCode": 200}
+
         # Update the user's log sheet with the clock-out time
         sheets_ops.add_clock_out_entry_to_timesheet(op_event.time)
 

@@ -4,6 +4,7 @@ Helper functions for interacting with Google Discovery APIs.
 
 import os
 import logging
+import datetime
 
 from google.auth.impersonated_credentials import Credentials as ImpersonatedCredentials
 from google.oauth2.service_account import Credentials
@@ -266,6 +267,43 @@ class SheetsOperations:
             protected_range_id,
         )
 
+    def get_last_entry_datetime(
+        self, clock_in: bool = True
+    ) -> datetime.datetime | None:
+        """Get the datetime of the last clock-in or clock-out entry in the spreadsheet"""
+
+        date_index = 0
+        time_index = 1 if clock_in else 2
+
+        log_entries = (
+            self.sheet.values()
+            .get(
+                spreadsheetId=self.volunteer_timesheet_id,
+                range="Sheet1!A1:C",  # Columns are A: Date, B: Clock-in time, C: Clock-out time
+                majorDimension="ROWS",
+                dateTimeRenderOption="FORMATTED_STRING",
+            )
+            .execute()
+            .get("values")
+        )
+
+        if len(log_entries) == 0:
+            return None
+
+        date_part = log_entries[-1][date_index]
+        if not date_part:
+            date_part = datetime.datetime.now().strftime("%m/%d/%Y")
+
+        time_part = log_entries[-1][time_index]
+        if not time_part:
+            time_part = (
+                datetime.datetime.now() - datetime.timedelta(hours=1)
+            ).strftime("%I:%M %p")
+
+        return datetime.datetime.strptime(
+            f"{date_part} {time_part}", "%m/%d/%Y %I:%M %p"
+        )
+
     def add_clock_in_entry_to_timesheet(self, log_entry: tuple, master=False):
         """
         Add clock-in entry to individual timesheet or master log.
@@ -302,20 +340,18 @@ class SheetsOperations:
 
         last_row = len(current_rows)
 
+        current_row = last_row if last_row > 2 else 3
+
         if master:
             self.sheet.values().update(
                 spreadsheetId=self.master_sheet_id,
-                range=(
-                    f"'{self.volunteer_name}'!C{last_row if last_row > 2 else 3}"
-                    f":D{last_row if last_row > 2 else 3}"
-                ),
+                range=(f"'{self.volunteer_name}'!C{current_row}" f":D{current_row}"),
                 body={
                     "values": [
                         [
                             log_entry,
                             (
-                                f"=C{last_row if last_row > 2 else 3}"
-                                f"-B{last_row if last_row > 2 else 3}"
+                                f"=IF(C{current_row}-B{current_row}>0, C{current_row}-B{current_row}, 1 + (C{current_row}-B{current_row}))"
                             ),
                         ]
                     ]
@@ -327,12 +363,12 @@ class SheetsOperations:
 
         self.sheet.values().update(
             spreadsheetId=self.volunteer_timesheet_id,
-            range=f"Sheet1!C{last_row if last_row > 2 else 3}:D{last_row if last_row > 2 else 3}",
+            range=f"Sheet1!C{current_row}:D{current_row}",
             body={
                 "values": [
                     [
                         log_entry,
-                        f"=C{last_row if last_row > 2 else 3}-B{last_row if last_row > 2 else 3}",
+                        f"=IF(C{current_row}-B{current_row}>0, C{current_row}-B{current_row}, 1 + (C{current_row}-B{current_row}))",
                     ]
                 ]
             },

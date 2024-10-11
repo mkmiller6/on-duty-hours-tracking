@@ -141,7 +141,7 @@ class TestSheetsOperations:
                 "values": [
                     [
                         mock_clock_out_entry,
-                        "=C5-B5",
+                        "=IF(C5-B5>0, C5-B5, 1 + (C5-B5))",
                     ]
                 ]
             },
@@ -179,7 +179,7 @@ class TestSheetsOperations:
                 "values": [
                     [
                         mock_clock_out_entry,
-                        "=C5-B5",
+                        "=IF(C5-B5>0, C5-B5, 1 + (C5-B5))",
                     ]
                 ]
             },
@@ -213,7 +213,7 @@ class TestSheetsOperations:
                 "values": [
                     [
                         mock_clock_out_entry,
-                        "=C3-B3",
+                        "=IF(C3-B3>0, C3-B3, 1 + (C3-B3))",
                     ]
                 ]
             },
@@ -245,7 +245,7 @@ class TestSheetsOperations:
                 "values": [
                     [
                         mock_clock_out_entry,
-                        "=C3-B3",
+                        "=IF(C3-B3>0, C3-B3, 1 + (C3-B3))",
                     ]
                 ]
             },
