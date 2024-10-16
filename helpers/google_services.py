@@ -288,7 +288,7 @@ class SheetsOperations:
             .get("values")
         )
 
-        if len(log_entries) == 0:
+        if not log_entries or len(log_entries) == 0:
             return None
 
         date_part = log_entries[-1][date_index]
