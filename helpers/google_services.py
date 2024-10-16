@@ -5,6 +5,7 @@ Helper functions for interacting with Google Discovery APIs.
 import os
 import logging
 import datetime
+import re
 
 from google.auth.impersonated_credentials import Credentials as ImpersonatedCredentials
 from google.oauth2.service_account import Credentials
@@ -279,7 +280,7 @@ class SheetsOperations:
             self.sheet.values()
             .get(
                 spreadsheetId=self.volunteer_timesheet_id,
-                range="Sheet1!A1:C",  # Columns are A: Date, B: Clock-in time, C: Clock-out time
+                range="Sheet1!A3:C",  # Columns are A: Date, B: Clock-in time, C: Clock-out time
                 majorDimension="ROWS",
                 dateTimeRenderOption="FORMATTED_STRING",
             )
@@ -293,12 +294,16 @@ class SheetsOperations:
         date_part = log_entries[-1][date_index]
         if not date_part:
             date_part = datetime.datetime.now().strftime("%m/%d/%Y")
+        elif re.match(r"\d{2}/\d{2}/\d{4}", date_part) is None:
+            return None
 
-        time_part = log_entries[-1][time_index]
-        if not time_part:
+        time_part = log_entries[-1]
+        if len(time_part) < time_index + 1:
             time_part = (
                 datetime.datetime.now() - datetime.timedelta(hours=1)
             ).strftime("%I:%M %p")
+        else:
+            time_part = time_part[time_index]
 
         return datetime.datetime.strptime(
             f"{date_part} {time_part}", "%m/%d/%Y %I:%M %p"
