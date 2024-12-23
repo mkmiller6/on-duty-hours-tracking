@@ -253,7 +253,9 @@ class SheetsOperations:
         )
 
         sheet_id = ind_sheet.get("properties").get("sheetId")
-        protected_range_id = ind_sheet.get("protectedRanges")[0].get("protectedRangeId")
+        protected_range_id = ind_sheet.get("protectedRanges")
+        if protected_range_id:
+            protected_range_id = protected_range_id[0].get("protectedRangeId")
 
         self.sheet.values().append(
             spreadsheetId=self.volunteer_timesheet_id,
@@ -434,33 +436,9 @@ class SheetsOperations:
         Batch update the copied spreadsheet. Updates protected range to allow Asmbly groups
         to edit, and formats the Hours column to Duration.
         """
-        self.sheet.batchUpdate(
-            spreadsheetId=file_id,
-            body={
+        body = (
+            {
                 "requests": [
-                    {
-                        "updateProtectedRange": {
-                            "protectedRange": {
-                                "protectedRangeId": protected_range_id,
-                                "range": {
-                                    "sheetId": copied_sheet_id,
-                                    "startColumnIndex": 0,
-                                    "endColumnIndex": 4,
-                                },
-                                "description": "On-Duty Hours",
-                                "warningOnly": False,
-                                "editors": {
-                                    "users": ["admin@asmbly.org", PRIV_SA],
-                                    "groups": [
-                                        "membership@asmbly.org",
-                                        "leadership@asmbly.org",
-                                        "classes@asmbly.org",
-                                    ],
-                                },
-                            },
-                            "fields": "*",
-                        }
-                    },
                     {
                         "updateCells": {
                             "rows": [
@@ -488,7 +466,36 @@ class SheetsOperations:
                     },
                 ]
             },
-        ).execute()
+        )
+
+        if protected_range_id:
+            body["requests"].append(
+                {
+                    "updateProtectedRange": {
+                        "protectedRange": {
+                            "protectedRangeId": protected_range_id,
+                            "range": {
+                                "sheetId": copied_sheet_id,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": 4,
+                            },
+                            "description": "On-Duty Hours",
+                            "warningOnly": False,
+                            "editors": {
+                                "users": ["admin@asmbly.org", PRIV_SA],
+                                "groups": [
+                                    "membership@asmbly.org",
+                                    "leadership@asmbly.org",
+                                    "classes@asmbly.org",
+                                ],
+                            },
+                        },
+                        "fields": "*",
+                    }
+                },
+            )
+
+        self.sheet.batchUpdate(spreadsheetId=file_id, body=body).execute()
 
     def batch_update_new_master_sheet(self, file_id, new_sheet_id, user_full_name):
         """
