@@ -257,12 +257,13 @@ class SheetsOperations:
         if protected_range_id:
             protected_range_id = protected_range_id[0].get("protectedRangeId")
 
+        name_field = f"Name: {self.volunteer_name}"
         self.sheet.values().append(
             spreadsheetId=self.volunteer_timesheet_id,
             range="Sheet1!F1:F2",
-            body={"values": [[f"Name: {self.volunteer_name}"], ["Notes/Comments"]]},
+            body={"values": [[name_field], ["Notes/Comments"]]},
             valueInputOption="USER_ENTERED",
-        )
+        ).execute()
 
         self.batch_update_copied_spreadsheet(
             self.volunteer_timesheet_id,
@@ -296,7 +297,7 @@ class SheetsOperations:
         date_part = log_entries[-1][date_index]
         if not date_part:
             date_part = datetime.datetime.now().strftime("%m/%d/%Y")
-        elif re.match(r"\d{2}/\d{2}/\d{4}", date_part) is None:
+        elif re.match(r"\d{1,2}/\d{1,2}/\d{4}", date_part) is None:
             return None
 
         time_part = log_entries[-1]
@@ -436,37 +437,35 @@ class SheetsOperations:
         Batch update the copied spreadsheet. Updates protected range to allow Asmbly groups
         to edit, and formats the Hours column to Duration.
         """
-        body = (
-            {
-                "requests": [
-                    {
-                        "updateCells": {
-                            "rows": [
-                                {
-                                    "values": [
-                                        {
-                                            "userEnteredFormat": {
-                                                "numberFormat": {
-                                                    "type": "DATE_TIME",
-                                                    "pattern": "[h]:mm:ss",
-                                                }
-                                            },
+        body = {
+            "requests": [
+                {
+                    "updateCells": {
+                        "rows": [
+                            {
+                                "values": [
+                                    {
+                                        "userEnteredFormat": {
+                                            "numberFormat": {
+                                                "type": "DATE_TIME",
+                                                "pattern": "[h]:mm:ss",
+                                            }
                                         },
-                                    ]
-                                }
-                            ],
-                            "fields": "userEnteredFormat.numberFormat",
-                            "range": {
-                                "sheetId": copied_sheet_id,
-                                "startRowIndex": 2,
-                                "startColumnIndex": 3,
-                                "endColumnIndex": 4,
-                            },
+                                    },
+                                ]
+                            }
+                        ],
+                        "fields": "userEnteredFormat.numberFormat",
+                        "range": {
+                            "sheetId": copied_sheet_id,
+                            "startRowIndex": 2,
+                            "startColumnIndex": 3,
+                            "endColumnIndex": 4,
                         },
                     },
-                ]
-            },
-        )
+                },
+            ]
+        }
 
         if protected_range_id:
             body["requests"].append(
