@@ -70,9 +70,9 @@ class DriveOperations:
         self.main_drive_id = MAIN_DRIVE_ID
         self.template_sheet_id = TEMPLATE_SHEET_ID
         self.parent_folder_id = PARENT_FOLDER_ID
-        self.slideshow_folder_id = self.get_folder_id(MAIN_DRIVE_ID, "____LobbyTV").get(
-            "id"
-        )
+        self.slideshow_folder_id = self.get_folder_id(
+            MAIN_DRIVE_ID, "_____LobbyTV"
+        ).get("id")
         self.volunteer_slides_folder_id = self.get_folder_id(
             ON_DUTY_DRIVE_ID, "Volunteer Slides"
         ).get("id")
@@ -101,7 +101,7 @@ class DriveOperations:
         Remove volunteer from slideshow.
         """
         if self.slideshow_folder_id is None:
-            logging.error("Folder '____LobbyTV' not found")
+            logging.error("Folder '_____LobbyTV' not found")
             return
 
         volunteer_slide = self.slide_search(
